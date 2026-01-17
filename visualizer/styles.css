@@ -286,6 +286,18 @@ button:disabled {
     margin-bottom: 5px;
 }
 
+.stat-value.stat-medium {
+    font-size: 1.8rem;
+}
+
+.stat-value.stat-small {
+    font-size: 1.4rem;
+}
+
+.stat-value.stat-tiny {
+    font-size: 1.1rem;
+}
+
 .stat-label {
     font-size: 0.95rem;
     color: var(--text-secondary);

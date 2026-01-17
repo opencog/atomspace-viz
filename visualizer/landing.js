@@ -440,11 +440,29 @@ function processAtomCounts(counts) {
     atomData.totalCount = totalAtoms;
 }
 
+// Set stat value with appropriate font size based on number length
+function setStatValue(elem, value) {
+    const text = value.toLocaleString();
+    elem.textContent = text;
+
+    // Remove existing size classes
+    elem.classList.remove('stat-medium', 'stat-small', 'stat-tiny');
+
+    // Add size class based on text length
+    if (text.length > 11) {
+        elem.classList.add('stat-tiny');
+    } else if (text.length > 8) {
+        elem.classList.add('stat-small');
+    } else if (text.length > 5) {
+        elem.classList.add('stat-medium');
+    }
+}
+
 function updateStats(stats) {
-    atomCount.textContent = stats.total.toLocaleString();
-    nodeCount.textContent = stats.nodes.toLocaleString();
-    linkCount.textContent = stats.links.toLocaleString();
-    typeCount.textContent = stats.types.toLocaleString();
+    setStatValue(atomCount, stats.total);
+    setStatValue(nodeCount, stats.nodes);
+    setStatValue(linkCount, stats.links);
+    setStatValue(typeCount, stats.types);
 
     // Update timestamp
     const now = new Date();
