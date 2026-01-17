@@ -12,6 +12,9 @@ PROJECT(atomspace-viz VERSION 1.0.0)
 # Add the visualizer subdirectory for installation
 ADD_SUBDIRECTORY(visualizer)
 
+# Add the analytics subdirectory for RocksDB compilation
+ADD_SUBDIRECTORY(analytics)
+
 # ===================================================================
 # Packaging
 ## Architecture the package is for.
