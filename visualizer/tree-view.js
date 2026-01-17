@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Get server URL from localStorage (same as type-view)
     const savedBaseUrl = localStorage.getItem('cogserver-url');
-    serverUrl = savedBaseUrl || `ws://${window.location.hostname}:18080/`;
+    serverUrl = savedBaseUrl || `ws://${window.location.hostname}:${window.location.port}/`;
     console.log('Server URL:', serverUrl, savedBaseUrl ? '(from localStorage)' : '(default)');
 
     // Initialize the graph

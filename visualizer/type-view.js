@@ -47,7 +47,7 @@ function connect() {
 
     // Try to get saved server URL from localStorage, otherwise use default
     const savedBaseUrl = localStorage.getItem('cogserver-url');
-    const baseUrl = savedBaseUrl || `ws://${window.location.hostname}:18080/`;
+    const baseUrl = savedBaseUrl || `ws://${window.location.hostname}:${window.location.port}/`;
     const serverUrl = baseUrl + 'json';
 
     console.log('Connecting to:', serverUrl, savedBaseUrl ? '(from localStorage)' : '(default)');
@@ -82,7 +82,7 @@ function connect() {
             console.error('WebSocket error:', error);
             statusElement.textContent = 'Connection Error';
             statusElement.style.color = 'red';
-            showError('Connection error - make sure CogServer is running on localhost:18080');
+            showError('Connection error - make sure CogServer is running');
             showLoading(false);
         };
 

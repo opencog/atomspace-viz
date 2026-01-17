@@ -62,8 +62,9 @@ function init() {
         if (e.key === 'Enter') sendDebugCommand();
     });
 
-    // Set default values - use current hostname/IP
-    const defaultUrl = `ws://${window.location.hostname}:18080/`;
+    // Set default values - use current hostname/IP and port
+    const defaultUrl = `ws://${window.location.hostname}:${window.location.port}/`;
+    serverInput.placeholder = defaultUrl;
     serverInput.value = serverInput.value || defaultUrl;
 
     // Check for autoconnect URL parameter
