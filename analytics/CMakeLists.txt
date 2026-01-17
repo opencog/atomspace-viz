@@ -37,7 +37,24 @@ ADD_CUSTOM_COMMAND(
 ADD_CUSTOM_TARGET(analytics-rdb ALL
     DEPENDS "${ANALYTICS_RDB_DIR}/CURRENT")
 
+# Ensure 'make clean' removes the entire RocksDB directory
+SET_DIRECTORY_PROPERTIES(PROPERTIES
+    ADDITIONAL_MAKE_CLEAN_FILES "${ANALYTICS_RDB_DIR}")
+
 # Install the RocksDB directory
+# First, remove any existing installation to prevent database corruption
+# (mixing old and new RocksDB files will corrupt the database)
+INSTALL(CODE "
+    set(ANALYTICS_DEST \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/share/cogserver/analytics\")
+    if(EXISTS \"\${ANALYTICS_DEST}\")
+        message(STATUS \"Removing old analytics database: \${ANALYTICS_DEST}\")
+        file(REMOVE_RECURSE \"\${ANALYTICS_DEST}\")
+    endif()
+"
+    COMPONENT analytics
+)
+
+# Now install the new RocksDB directory
 # Note: DIRECTORY installs the contents, so analytics.rdb/* -> analytics/*
 INSTALL(DIRECTORY "${ANALYTICS_RDB_DIR}/"
     DESTINATION share/cogserver/analytics
