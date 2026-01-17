@@ -2,16 +2,24 @@
 
 A web-based visualization tool for AtomSpace contents. Provides
 statistics and the ability to visualize structures held in the
-AtomSpace.
+AtomSpace. Meant to be an aid in understanding AtomSpace contents.
 
-[***Try it here***](https://html-preview.github.io/?url=https://github.com/opencog/cogserver/blob/master/examples/visualizer/index.html).
+[***Try it here***](https://html-preview.github.io/?url=https://github.com/opencog/atomspace-viz/blob/master/visualizer/index.html).
 You must have a CogServer running somewhere; you will need to type the
 URL into the connection box.
 
 ## Prerequisites
+This visualizer connects to a running CogServer to get at the AtomSpace
+contents held there. Therefore you need, as a minimum, the following
+installed:
+* The [AtomSpace](https://github.com/opencog/atomspace)
+* The [Storage component](https://github.com/opencog/atomspace-storage)
+* The [CogServer](https://github.com/opencog/cogserver)
+* Data in your AtomSpace. Up to you to generate this for yourself.
 
-1. A running CogServer instance with WebSocket support enabled
-2. A web browser with WebSocket support (all modern browsers)
+## Status
+***Version 1.0.0*** -- Performs basic visualization. Works. Nothing
+fancy.
 
 ## Starting the CogServer
 
@@ -42,13 +50,13 @@ opencog.cogserver.startCogserver()
 3. Click "Connect" (the JSON endpoint will be automatically appended)
 4. Once connected, the visualizer will automatically fetch and display AtomSpace statistics
 
-## Architecture
+## Design
 
-The visualizer consists of three main components:
-
-1. **index.html**: Main HTML structure and layout
-2. **styles.css**: Comprehensive styling with modern CSS features
-3. **visualizer.js**: WebSocket management and JSON data processing logic
+The visualizer was written entirely by Anthropic's Claude Code.
+Although attempts have been made to keep the code-base relatively clean
+and maintainable, the reality is that more or less everything here is
+going to be LLM slop. You should not try to hand-edit the code here;
+you should work with an LLM codig tool to make changes and updates here.
 
 ## Troubleshooting
 
