@@ -9,6 +9,14 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT(atomspace-viz VERSION 1.0.0)
 
+# Find required packages - these must be installed for the build to work
+# AtomSpace sets up CMAKE_MODULE_PATH for us
+FIND_PACKAGE(AtomSpace REQUIRED)
+FIND_PACKAGE(AtomSpaceRocks REQUIRED)
+
+# Include the Summary module for build summary output
+INCLUDE(Summary)
+
 # Add the visualizer subdirectory for installation
 ADD_SUBDIRECTORY(visualizer)
 
@@ -48,3 +56,11 @@ SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local")
 SET(CPACK_DEBIAN_PACKAGE_SECTION "web")
 SET(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://opencog.org")
 INCLUDE(CPack)
+
+# ===================================================================
+# Build summary - print at the end so it's the last thing shown
+SUMMARY_ADD("AtomSpace" "AtomSpace library" ATOMSPACE_FOUND)
+SUMMARY_ADD("AtomSpaceRocks" "RocksDB persistence" ATOMSPACE_ROCKS_FOUND)
+SUMMARY_ADD("Visualizer" "Web-based AtomSpace visualizer" TRUE)
+SUMMARY_ADD("Analytics" "Atomese analytics components" TRUE)
+SUMMARY_SHOW()
