@@ -4,7 +4,6 @@ INSTALL(FILES
 	index.html
 	tree-view.html
 	type-view.html
-	README.md
 	DESTINATION share/cogserver/visualizer
 	COMPONENT visualizer
 )
