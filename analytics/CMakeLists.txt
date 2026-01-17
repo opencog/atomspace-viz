@@ -7,6 +7,10 @@
 # is copied to the install location.
 #
 
+# Find required packages - these must be installed for the build to work
+FIND_PACKAGE(AtomSpace REQUIRED)
+FIND_PACKAGE(AtomSpaceRocks REQUIRED)
+
 # Define the RocksDB output directory in build tree
 SET(ANALYTICS_RDB_DIR "${CMAKE_BINARY_DIR}/analytics.rdb")
 
