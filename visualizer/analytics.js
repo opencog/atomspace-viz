@@ -128,8 +128,11 @@ function loadAnalytics() {
     showLoading(true, 'Creating analytics AtomSpace...');
     pendingCommand = 'create-atomspace';
 
-    console.log('Creating analytics AtomSpace');
-    ws.send(executeAtomese(CREATE_ATOMSPACE));
+    const cmd = executeAtomese(CREATE_ATOMSPACE);
+    console.log('=== STEP 1: Creating analytics AtomSpace ===');
+    console.log('Raw Atomese:', CREATE_ATOMSPACE);
+    console.log('JSON command:', cmd);
+    ws.send(cmd);
 }
 
 function continueLoadAnalytics() {
@@ -195,9 +198,11 @@ function handleResponse(data) {
 
 function processResult(result) {
     showLoading(false);
+    console.log('processResult called, pendingCommand:', pendingCommand, 'result:', result);
 
     if (pendingCommand === 'create-atomspace') {
-        console.log('Analytics AtomSpace created');
+        console.log('=== STEP 1 COMPLETE: Analytics AtomSpace created ===');
+        console.log('Server response:', result);
         continueLoadAnalytics();
     } else if (pendingCommand === 'load-analytics') {
         console.log('Analytics loaded, connecting to analytics server on port', analyticsPort);
