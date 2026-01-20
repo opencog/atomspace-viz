@@ -59,6 +59,12 @@ function connect() {
     const baseUrl = savedBaseUrl || `ws://${window.location.hostname}:${window.location.port}/`;
     const serverUrl = baseUrl + 'json';
 
+    // Extract port number from URL and compute analytics port
+    const portMatch = baseUrl.match(/:(\d+)/);
+    const mainPort = portMatch ? parseInt(portMatch[1]) : 18080;
+    analyticsPort = mainPort + 1;
+    console.log('Main port:', mainPort, 'Analytics port:', analyticsPort);
+
     console.log('Connecting to:', serverUrl);
     statusElement.textContent = 'Connecting...';
     statusElement.style.color = 'orange';
@@ -130,13 +136,13 @@ function continueLoadAnalytics() {
     showLoading(true, 'Loading analytics pipelines from RocksDB...');
     pendingCommand = 'load-analytics';
 
-    console.log('Loading analytics from RocksDB');
-    ws.send(executeAtomese(LOAD_ANALYTICS));
+    console.log('Loading analytics from RocksDB, analytics port:', analyticsPort);
+    ws.send(executeAtomese(makeLoadAnalytics(analyticsPort)));
 }
 
 function runTypeCounts() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        showError('Not connected to server');
+    if (!analyticsWs || analyticsWs.readyState !== WebSocket.OPEN) {
+        showError('Not connected to analytics server');
         return;
     }
 
@@ -146,10 +152,9 @@ function runTypeCounts() {
     }
 
     showLoading(true, 'Running type-counts pipeline...');
-    pendingCommand = 'type-counts';
 
-    console.log('Running type-counts pipeline');
-    ws.send(executeAtomese(TYPE_COUNTS));
+    console.log('Running type-counts pipeline on analytics server');
+    analyticsWs.send(executeAtomese(TYPE_COUNTS));
 }
 
 function handleResponse(data) {
@@ -195,16 +200,99 @@ function processResult(result) {
         console.log('Analytics AtomSpace created');
         continueLoadAnalytics();
     } else if (pendingCommand === 'load-analytics') {
-        analyticsLoaded = true;
-        document.getElementById('analytics-status').textContent = 'Loaded';
-        document.getElementById('analytics-status').style.color = 'green';
-        enableControls();
-        console.log('Analytics bootstrap complete');
+        console.log('Analytics loaded, connecting to analytics server on port', analyticsPort);
+        connectToAnalyticsServer();
         pendingCommand = null;
     } else if (pendingCommand === 'type-counts') {
         displayTypeCountsResult(result);
         pendingCommand = null;
     }
+}
+
+function connectToAnalyticsServer() {
+    const savedBaseUrl = localStorage.getItem('cogserver-url');
+    const baseUrl = savedBaseUrl || `ws://${window.location.hostname}:${window.location.port}/`;
+
+    // Replace the port in the URL with the analytics port
+    const analyticsUrl = baseUrl.replace(/:\d+/, ':' + analyticsPort) + 'json';
+
+    console.log('Connecting to analytics server:', analyticsUrl);
+    showLoading(true, 'Connecting to analytics server...');
+
+    try {
+        analyticsWs = new WebSocket(analyticsUrl);
+
+        analyticsWs.onopen = () => {
+            console.log('Connected to analytics server');
+            analyticsLoaded = true;
+            document.getElementById('analytics-status').textContent = 'Loaded';
+            document.getElementById('analytics-status').style.color = 'green';
+            enableControls();
+            showLoading(false);
+        };
+
+        analyticsWs.onmessage = (event) => {
+            try {
+                handleAnalyticsResponse(event.data);
+            } catch (error) {
+                console.error('Error handling analytics response:', error);
+                showError('Error processing response: ' + error.message);
+            }
+        };
+
+        analyticsWs.onerror = (error) => {
+            console.error('Analytics WebSocket error:', error);
+            showError('Analytics server connection error');
+            showLoading(false);
+        };
+
+        analyticsWs.onclose = () => {
+            console.log('Disconnected from analytics server');
+            analyticsLoaded = false;
+            disableControls();
+        };
+
+    } catch (error) {
+        console.error('Analytics connection error:', error);
+        showError('Failed to connect to analytics server: ' + error.message);
+        showLoading(false);
+    }
+}
+
+function handleAnalyticsResponse(data) {
+    console.log('Analytics raw response:', data);
+
+    let response;
+    try {
+        response = JSON.parse(data);
+    } catch (e) {
+        console.log('Non-JSON analytics response:', data);
+        displayTypeCountsResult(data);
+        return;
+    }
+
+    if (response.content && Array.isArray(response.content)) {
+        if (response.isError === true) {
+            const errorText = response.content[0]?.text || 'Unknown error';
+            console.error('Analytics server error:', errorText);
+            showError('Analytics error: ' + errorText);
+            showLoading(false);
+            return;
+        }
+
+        const contentText = response.content[0]?.text || '';
+        console.log('Analytics content text:', contentText);
+
+        try {
+            const result = JSON.parse(contentText);
+            displayTypeCountsResult(result);
+        } catch (e) {
+            displayTypeCountsResult(contentText);
+        }
+    } else {
+        displayTypeCountsResult(response);
+    }
+    showLoading(false);
 }
 
 function displayTypeCountsResult(result) {
