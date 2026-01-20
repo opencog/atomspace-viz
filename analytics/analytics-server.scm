@@ -12,6 +12,7 @@
 ;
 ; Pure Atomese - no Scheme code, so it can be stored in RocksDB.
 ;
+(use-modules (opencog) (opencog cogserver))
 
 ; ---------------------------------------------------------------
 ; The bootloader - configures and starts the analytics CogServer.
