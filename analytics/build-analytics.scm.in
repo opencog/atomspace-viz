@@ -20,7 +20,7 @@
 
 ; Paths configured by CMake
 (define source-dir "@CMAKE_CURRENT_SOURCE_DIR@")
-(define rdb-path "rocks:///@CMAKE_BINARY_DIR@/analytics.rdb")
+(define rdb-path "rocks://@CMAKE_BINARY_DIR@/analytics.rdb")
 
 ; Load all the analytics .scm files
 (format #t "Loading analytics from ~a~%" source-dir)
