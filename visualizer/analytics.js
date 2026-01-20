@@ -5,6 +5,12 @@ let ws = null;
 let analyticsLoaded = false;
 let pendingCommand = null;
 
+// Wrap atomese s-expression in JSON execute format for the /json endpoint
+function executeAtomese(sexpr) {
+    const escaped = sexpr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return `{ "tool": "execute", "params": { "atomese": "${escaped}" } }`;
+}
+
 // Bootstrap: Create child AtomSpace for analytics
 const CREATE_ATOMSPACE = '(AtomSpace "analytics" (AtomSpaceOf (Link)))';
 
@@ -107,7 +113,7 @@ function loadAnalytics() {
     pendingCommand = 'create-atomspace';
 
     console.log('Creating analytics AtomSpace');
-    ws.send(CREATE_ATOMSPACE + '\n');
+    ws.send(executeAtomese(CREATE_ATOMSPACE));
 }
 
 function continueLoadAnalytics() {
@@ -115,7 +121,7 @@ function continueLoadAnalytics() {
     pendingCommand = 'load-analytics';
 
     console.log('Loading analytics from RocksDB');
-    ws.send(LOAD_ANALYTICS + '\n');
+    ws.send(executeAtomese(LOAD_ANALYTICS));
 }
 
 function runTypeCounts() {
@@ -133,7 +139,7 @@ function runTypeCounts() {
     pendingCommand = 'type-counts';
 
     console.log('Running type-counts pipeline');
-    ws.send(TYPE_COUNTS + '\n');
+    ws.send(executeAtomese(TYPE_COUNTS));
 }
 
 function handleResponse(data) {
