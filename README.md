@@ -56,7 +56,7 @@ The visualizer was written entirely by Anthropic's Claude Code.
 Although attempts have been made to keep the code-base relatively clean
 and maintainable, the reality is that more or less everything here is
 going to be LLM slop. You should not try to hand-edit the code here;
-you should work with an LLM codig tool to make changes and updates here.
+you should work with an LLM coding tool to make changes and updates here.
 
 ## Troubleshooting
 
