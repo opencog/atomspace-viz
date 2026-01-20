@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - AtomSpace Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="theme.js"></script>
+    <style>
+        .analytics-container {
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 30px;
+            margin-top: 20px;
+            min-height: 500px;
+        }
+
+        .analytics-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            position: relative;
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-label {
+            width: 150px;
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bar-wrapper {
+            flex: 1;
+            height: 20px;
+            background: var(--background);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .bar-value {
+            width: 60px;
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .info-panel {
+            background: var(--background);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+
+        .info-panel h3 {
+            margin: 0 0 10px 0;
+            color: var(--primary-dark);
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: var(--text-secondary);
+        }
+
+        .results-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--background);
+            border-radius: var(--border-radius);
+        }
+
+        .results-summary h4 {
+            margin: 0 0 10px 0;
+        }
+    </style>
+    <script src="analytics.js"></script>
+</head>
+<body data-theme="dark">
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light mode">
+        <span id="theme-icon">&#9728;&#65039;</span>
+    </button>
+
+    <div class="container">
+        <header>
+            <h1>AtomSpace Analytics</h1>
+            <p class="subtitle">Analyze and visualize AtomSpace contents</p>
+        </header>
+
+        <main>
+            <section id="info-panel" class="info-panel">
+                <h3>Analytics Status</h3>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <strong>Status:</strong> <span id="connection-status">Connecting...</span>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Analytics:</strong> <span id="analytics-status">Not loaded</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="analytics-container" class="analytics-container">
+                <div class="analytics-controls">
+                    <button id="run-type-counts" class="btn-primary" disabled>
+                        <span class="btn-icon">&#128202;</span>
+                        <span class="btn-text">Visualize Atom Type Counts</span>
+                    </button>
+                    <button id="refresh-btn" class="btn-secondary" disabled>
+                        <span class="btn-icon">&#128260;</span>
+                        <span class="btn-text">Refresh</span>
+                    </button>
+                </div>
+
+                <div id="chart-container" class="chart-container hidden">
+                    <div id="bar-chart" class="bar-chart">
+                        <!-- Bars will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <div id="results-summary" class="results-summary hidden">
+                    <h4>Summary</h4>
+                    <p id="summary-text"></p>
+                </div>
+            </section>
+
+            <section id="loading-panel" class="loading hidden">
+                <p id="loading-message">Loading...</p>
+            </section>
+
+            <section id="error-panel" class="error-panel hidden">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;&#65039;</span>
+                    <span id="error-message"></span>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>AtomSpace Analytics * <a href="https://wiki.opencog.org/w/AtomSpace" target="_blank">Documentation</a></p>
+        </footer>
+    </div>
+</body>
+</html>
