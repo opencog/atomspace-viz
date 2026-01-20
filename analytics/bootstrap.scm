@@ -11,6 +11,12 @@
 ; Individual analytics pipelines (like "type-counts") are triggered
 ; directly by the web browser when the user clicks on buttons/menus.
 ;
+; XXX This is currently dead code -- the working version of this code
+; has been copied into the analytics.js javascript web page.  So the
+; below is an example of what it "could be like". Perhaps in the future
+; this should be wrapped with some SensoryNode or something so that we
+; don't hard-code stuff like this in javasscript.
+;
 (use-modules (opencog) (opencog persist) (opencog persist-rocks))
 
 ; ---------------------------------------------------------------
@@ -20,14 +26,6 @@
 ; isolated in the child space.
 ;
 (AtomSpace "analytics" (AtomSpaceOf (Link)))
-
-; ---------------------------------------------------------------
-; The bootloader - placeholder for future bootstrap logic.
-; Currently empty; its purpose will become clear as the system evolves.
-;
-(PipeLink
-	(Name "bootloader")
-	(List))
 
 ; ---------------------------------------------------------------
 ; Load analytics code from RocksDB into the child AtomSpace.
