@@ -47,8 +47,11 @@
 ; - Sorts by count (descending)
 ; - Formats output with type name and count
 ;
-; The result is a LinkValue containing formatted entries like:
-;   (LinkValue "Usage count of type: " (Type 'ConceptNode) " is " 42 "\n")
+; The result is a LinkValue (table) where each row is a LinkValue:
+;   (LinkValue
+;     (LinkValue (Type 'ConceptNode) (FloatValue 0 0 42))
+;     (LinkValue (Type 'ListLink) (FloatValue 0 0 10))
+;     ...)
 ;
 ; Note: Running this multiple times will accumulate counts. If fresh
 ; counts are needed, the "cnt" values on TypeNodes should be cleared
@@ -65,14 +68,10 @@
 				(Equal
 					(Type 'FloatValue)
 					(TypeOf (ValueOf (Variable "$typ") (Predicate "cnt")))))
-			; Output: formatted structure with type and count
+			; Output: table row with type and count
 			(LinkSignature (Type 'LinkValue)
-				(Node "Usage count of type: ")
 				(Variable "$typ")
-				(Node " is equal to ")
-				(ElementOf (Number 2)
-					(ValueOf (Variable "$typ") (Predicate "cnt")))
-				(Node "\n")))
+				(ValueOf (Variable "$typ") (Predicate "cnt"))))
 		; Input: sorted unique types
 		(LinkSignature
 			(TypeNode 'SortedValue)

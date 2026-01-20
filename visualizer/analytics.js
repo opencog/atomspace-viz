@@ -203,31 +203,57 @@ function displayTypeCountsResult(result) {
 
     let typeCounts = [];
 
-    if (typeof result === 'string') {
-        const lines = result.split('\n').filter(line => line.trim());
-        for (const line of lines) {
-            let match = line.match(/Usage count of type:\s*(\S+)\s*is equal to\s*(\d+)/);
-            if (match) {
-                typeCounts.push({ type: match[1], count: parseInt(match[2]) });
-                continue;
-            }
-            match = line.match(/^\s*(\S+)\s+(\d+)\s*$/);
-            if (match) {
-                typeCounts.push({ type: match[1], count: parseInt(match[2]) });
+    // Parse the result - expecting LinkValue table format:
+    // { "type": "LinkValue", "value": [
+    //   { "type": "LinkValue", "value": [
+    //     { "type": "Type", "name": "ConceptNode" },
+    //     { "type": "FloatValue", "value": [0, 0, 42] }
+    //   ]},
+    //   ...
+    // ]}
+    if (result && result.type === 'LinkValue' && Array.isArray(result.value)) {
+        for (const row of result.value) {
+            if (row && row.type === 'LinkValue' && Array.isArray(row.value) && row.value.length >= 2) {
+                const typeEntry = row.value[0];
+                const countEntry = row.value[1];
+
+                // Extract type name
+                let typeName = '';
+                if (typeEntry && typeEntry.type === 'Type' && typeEntry.name) {
+                    typeName = typeEntry.name;
+                } else if (typeEntry && typeEntry.name) {
+                    typeName = typeEntry.name;
+                } else if (typeof typeEntry === 'string') {
+                    typeName = typeEntry;
+                }
+
+                // Extract count (third element of FloatValue vector [0, 0, count])
+                let count = 0;
+                if (countEntry && countEntry.type === 'FloatValue' && Array.isArray(countEntry.value)) {
+                    count = countEntry.value[2] || countEntry.value[0] || 0;
+                } else if (typeof countEntry === 'number') {
+                    count = countEntry;
+                }
+
+                if (typeName && count > 0) {
+                    typeCounts.push({ type: typeName, count: Math.round(count) });
+                }
             }
         }
     } else if (Array.isArray(result)) {
+        // Fallback: plain array of rows
         for (const item of result) {
             if (Array.isArray(item) && item.length >= 2) {
                 typeCounts.push({ type: String(item[0]), count: parseInt(item[1]) });
-            } else if (typeof item === 'object' && item.type && item.count !== undefined) {
-                typeCounts.push({ type: item.type, count: parseInt(item.count) });
             }
         }
-    } else if (typeof result === 'object') {
-        for (const [type, count] of Object.entries(result)) {
-            if (typeof count === 'number') {
-                typeCounts.push({ type, count });
+    } else if (typeof result === 'string') {
+        // Fallback: parse string output
+        const lines = result.split('\n').filter(line => line.trim());
+        for (const line of lines) {
+            const match = line.match(/^\s*(\S+)\s+(\d+)\s*$/);
+            if (match) {
+                typeCounts.push({ type: match[1], count: parseInt(match[2]) });
             }
         }
     }
