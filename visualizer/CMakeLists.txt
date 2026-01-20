@@ -2,6 +2,7 @@
 # Install visualizer files to /usr/local/share/cogserver/visualizer/
 INSTALL(FILES
 	index.html
+	analytics.html
 	tree-view.html
 	type-view.html
 	DESTINATION share/cogserver/visualizer
@@ -9,6 +10,7 @@ INSTALL(FILES
 )
 
 INSTALL(FILES
+	analytics.js
 	atomspace-cache.js
 	graph-view.js
 	landing.js
