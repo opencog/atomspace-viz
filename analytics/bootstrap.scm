@@ -47,7 +47,9 @@
 		; Load analytics code into child space
 		(SetValue
 			(RocksStorageNode "rocks:///usr/local/share/cogserver/analytics")
-			(Predicate "*-load-atomspace-*"))))
+			(Predicate "*-load-atomspace-*"))
+		; Start the analytics CogServer
+		(Name "bootloader")))
 
 ; ---------------------------------------------------------------
 ; To load analytics:

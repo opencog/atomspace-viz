@@ -1,9 +1,11 @@
 // AtomSpace Analytics
 // Loads analytics pipelines from RocksDB and displays visualizations
 
-let ws = null;
+let ws = null;              // Connection to main cogserver
+let analyticsWs = null;     // Connection to analytics server
 let analyticsLoaded = false;
 let pendingCommand = null;
+let analyticsPort = null;   // Computed as main port + 1
 
 // Wrap atomese s-expression in JSON execute format for the /json endpoint
 function executeAtomese(sexpr) {
@@ -14,8 +16,10 @@ function executeAtomese(sexpr) {
 // Bootstrap: Create child AtomSpace for analytics
 const CREATE_ATOMSPACE = '(AtomSpace "analytics" (AtomSpaceOf (Link)))';
 
-// Bootstrap: Load analytics pipelines from RocksDB into the child AtomSpace
-const LOAD_ANALYTICS = `(Trigger
+// Bootstrap: Load analytics pipelines from RocksDB and start analytics server
+// The port parameter is passed to configure the analytics server
+function makeLoadAnalytics(port) {
+    return `(Trigger
     (PureExec
         (AtomSpace "analytics")
         (SetValue
@@ -24,9 +28,15 @@ const LOAD_ANALYTICS = `(Trigger
             (AtomSpace "analytics"))
         (SetValue
             (RocksStorageNode "rocks:///usr/local/share/cogserver/analytics")
-            (Predicate "*-load-atomspace-*"))))`;
+            (Predicate "*-load-atomspace-*"))
+        (SetValue
+            (Anchor "cfg-params")
+            (Predicate "web-port")
+            (Number ${port}))
+        (Name "bootloader")))`;
+}
 
-// Run the type-counts pipeline
+// Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
 document.addEventListener('DOMContentLoaded', () => {
