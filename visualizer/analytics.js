@@ -24,7 +24,7 @@ function makeLoadAnalytics(port) {
         (AtomSpace "analytics")
         (SetValue
             (RocksStorageNode "rocks:///usr/local/share/cogserver/analytics")
-            (Predicate "*-open-*")
+            (Predicate "*-open-ro-*")
             (AtomSpace "analytics"))
         (SetValue
             (RocksStorageNode "rocks:///usr/local/share/cogserver/analytics")

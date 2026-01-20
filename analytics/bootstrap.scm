@@ -37,10 +37,10 @@
 (define load-analytics
 	(PureExec
 		(AtomSpace "analytics")
-		; Open the analytics storage
+		; Open the analytics storage (read-only)
 		(SetValue
 			(RocksStorageNode "rocks:///usr/local/share/cogserver/analytics")
-			(Predicate "*-open-*")
+			(Predicate "*-open-ro-*")
 			(AtomSpace "analytics"))
 		; Load analytics code into child space
 		(SetValue
