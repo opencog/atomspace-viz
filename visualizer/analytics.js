@@ -154,6 +154,8 @@ function runTypeCounts() {
         return;
     }
 
+    // Disable button while running
+    document.getElementById('run-type-counts').disabled = true;
     showLoading(true, 'Running type-counts pipeline...');
 
     console.log('Running type-counts pipeline on analytics server');
@@ -282,6 +284,7 @@ function handleAnalyticsResponse(data) {
             console.error('Analytics server error:', errorText);
             showError('Analytics error: ' + errorText);
             showLoading(false);
+            document.getElementById('run-type-counts').disabled = false;
             return;
         }
 
@@ -298,6 +301,8 @@ function handleAnalyticsResponse(data) {
         displayTypeCountsResult(response);
     }
     showLoading(false);
+    // Re-enable button after results
+    document.getElementById('run-type-counts').disabled = false;
 }
 
 function displayTypeCountsResult(result) {
