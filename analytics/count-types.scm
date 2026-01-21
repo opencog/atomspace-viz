@@ -53,49 +53,49 @@
 ;     (LinkValue (Type 'ListLink) (FloatValue 0 0 10))
 ;     ...)
 ;
-; Note: Running this multiple times will accumulate counts. If fresh
-; counts are needed, the "cnt" values on TypeNodes should be cleared
-; first, or use a fresh child AtomSpace.
+; To avoid double-counting when this is re-reun, the data is collected
+; in a fresh AtomSpace, created via the PureExec link.
 ;
 (PipeLink
 	(Name "type-counts")
-	(Filter
-		(Rule
-			(TypedVariable (Variable "$typ") (Type 'Type))
-			; Guard: only accept types that have a count attached
-			(And
-				(Present (Variable "$typ"))
-				(Equal
-					(Type 'FloatValue)
-					(TypeOf (ValueOf (Variable "$typ") (Predicate "cnt")))))
-			; Output: table row with type and count
-			(LinkSignature (Type 'LinkValue)
-				(Variable "$typ")
-				(ValueOf (Variable "$typ") (Predicate "cnt"))))
-		; Input: sorted unique types
-		(LinkSignature
-			(TypeNode 'SortedValue)
-			(DefinedPredicate "count-order")
-			; Input: unique types (deduplicated)
-			(CollectionOf (TypeNode 'UnisetValue)
-				; Input: types extracted from atoms, with counts attached
-				(Filter
-					(Rule
-						(TypedVariable (Variable "$typ") (Type 'Type))
-						(Variable "$typ")
-						; Increment the count on this TypeNode, return TypeNode (not count)
-						(IncrementValueOn (Variable "$typ") (Predicate "cnt") (Number 0 0 1)))
-					; Input: types of all atoms
+	(PureExec
+		(Filter
+			(Rule
+				(TypedVariable (Variable "$typ") (Type 'Type))
+				; Guard: only accept types that have a count attached
+				(And
+					(Present (Variable "$typ"))
+					(Equal
+						(Type 'FloatValue)
+						(TypeOf (ValueOf (Variable "$typ") (Predicate "cnt")))))
+				; Output: table row with type and count
+				(LinkSignature (Type 'LinkValue)
+					(Variable "$typ")
+					(ValueOf (Variable "$typ") (Predicate "cnt"))))
+			; Input: sorted unique types
+			(LinkSignature
+				(TypeNode 'SortedValue)
+				(DefinedPredicate "count-order")
+				; Input: unique types (deduplicated)
+				(CollectionOf (TypeNode 'UnisetValue)
+					; Input: types extracted from atoms, with counts attached
 					(Filter
 						(Rule
-							(TypedVariable (Variable "$atom") (Type 'Atom))
-							(Variable "$atom")
-							(TypeOf (DontExec (Variable "$atom"))))
-						; Input: all atoms in the base (dataset) AtomSpace
-						(PureExec
-							(AtomSpaceOf (Link))
-							(Meet
+							(TypedVariable (Variable "$typ") (Type 'Type))
+							(Variable "$typ")
+							; Increment the count on this TypeNode, return TypeNode (not count)
+							(IncrementValueOn (Variable "$typ") (Predicate "cnt") (Number 0 0 1)))
+						; Input: types of all atoms
+						(Filter
+							(Rule
+								(TypedVariable (Variable "$atom") (Type 'Atom))
 								(Variable "$atom")
-								(Variable "$atom")))))))))
+								(TypeOf (DontExec (Variable "$atom"))))
+							; Input: all atoms in the base (dataset) AtomSpace
+							(PureExec
+								(AtomSpaceOf (Link))
+								(Meet
+									(Variable "$atom")
+									(Variable "$atom"))))))))))
 
 ; ---------------------------------------------------------------
