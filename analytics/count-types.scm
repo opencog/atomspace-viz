@@ -83,8 +83,8 @@
 					(Rule
 						(TypedVariable (Variable "$typ") (Type 'Type))
 						(Variable "$typ")
-						; Increment the count on this TypeNode
-						(IncrementValue (Variable "$typ") (Predicate "cnt") (Number 0 0 1)))
+						; Increment the count on this TypeNode, return TypeNode (not count)
+						(IncrementValueOn (Variable "$typ") (Predicate "cnt") (Number 0 0 1)))
 					; Input: types of all atoms
 					(Filter
 						(Rule
