@@ -91,9 +91,11 @@
 							(TypedVariable (Variable "$atom") (Type 'Atom))
 							(Variable "$atom")
 							(TypeOf (DontExec (Variable "$atom"))))
-						; Input: all atoms in the AtomSpace
-						(Meet
-							(Variable "$atom")
-							(Variable "$atom"))))))))
+						; Input: all atoms in the base (dataset) AtomSpace
+						(PureExec
+							(AtomSpaceOf (Link))
+							(Meet
+								(Variable "$atom")
+								(Variable "$atom")))))))))
 
 ; ---------------------------------------------------------------
