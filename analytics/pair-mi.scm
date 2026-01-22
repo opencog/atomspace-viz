@@ -31,7 +31,7 @@
 			(VariableList (Variable "left") (Variable "right"))
 			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
 			; Increment the count on temp anchor
-			(IncrementValueOn
+			(IncrementValue
 				(Anchor "temp results fixme later")
 				(Predicate "total")
 				(Number 1)))
