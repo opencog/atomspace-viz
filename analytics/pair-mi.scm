@@ -29,7 +29,7 @@
 	(Filter
 		(Rule
 			(VariableList (Variable "left") (Variable "right"))
-			(LinkValue (Variable "left") (Variable "right"))
+			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
 			; Increment the count on temp anchor
 			(IncrementValueOn
 				(Anchor "temp results fixme later")
