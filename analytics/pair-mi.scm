@@ -1,5 +1,5 @@
 ;
-; count-pairs.scm -- Pipeline that counts pairs from pair-generator
+; pair-mi.scm -- Pipeline that counts pairs from pair-generator
 ;
 ; This file defines an Atomese pipeline that counts the number of
 ; pairs produced by the pair-generator. The pair-generator is set up
@@ -7,8 +7,7 @@
 ;
 ; The pipeline is triggered by executing (Name "pair-counter").
 ;
-; The count is stored on the Meet atom that was registered on the
-; analytics anchor, using the key (Predicate "total").
+; The count is stored on a temporary anchor (to be improved later).
 ;
 (use-modules (opencog))
 
@@ -18,14 +17,12 @@
 ; This pipeline:
 ; - Gets the Meet pattern from the analytics anchor
 ; - Executes it to generate pairs
-; - For each pair, increments a counter on the Meet atom
+; - For each pair, increments a counter on a temp anchor
 ; - Returns the final count
 ;
 ; The Meet should have been set up with:
-;   (SetValue (Anchor "analytics") (Predicate "pair generator") (Meet ...))
-;
-; The Meet atom is retrieved via ValueOf and the count is stored on it
-; with key (Predicate "total").
+;   (SetValue (Anchor "analytics") (Predicate "pair generator")
+;       (DontExec (Meet ...)))
 ;
 (PipeLink
 	(Name "pair-counter")
@@ -33,9 +30,9 @@
 		(Rule
 			(VariableList (Variable "left") (Variable "right"))
 			(LinkValue (Variable "left") (Variable "right"))
-			; Increment the count on the Meet atom
+			; Increment the count on temp anchor
 			(IncrementValueOn
-				(ValueOf (Anchor "analytics") (Predicate "pair generator"))
+				(Anchor "temp results fixme later")
 				(Predicate "total")
 				(Number 1)))
 		; Input: pairs from the Meet stored on the anchor

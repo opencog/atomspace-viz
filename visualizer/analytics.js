@@ -511,7 +511,7 @@ function buildMIPattern() {
     const pattern = `(Edge ${relationPart}\n    (List ${leftPart} ${rightPart}))`;
     const meet = `(Meet (VariableList (Variable "left") (Variable "right")) ${pattern})`;
     // Store the Meet on the analytics anchor for the counting pipeline to reference
-    // DontExec prevents the Meet from being executed - we want to store the atom itself
+    // Single DontExec prevents execution during storage
     const setup = `(SetValue (Anchor "analytics") (Predicate "pair generator") (DontExec ${meet}))`;
 
     return { pattern, meet, setup };
