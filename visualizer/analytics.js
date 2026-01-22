@@ -465,6 +465,51 @@ function showError(message) {
 }
 
 // MI Selector functions
+
+// Build the Atomese pattern based on current MI selector state
+function buildMIPattern() {
+    const positions = ['relation', 'left', 'right'];
+    const selected = positions.filter(pos => miState[pos] === 'selected');
+
+    if (selected.length !== 2) {
+        return null;
+    }
+
+    // Map selected positions to variable names (first selected → "left", second → "right")
+    const varMap = {};
+    varMap[selected[0]] = 'left';
+    varMap[selected[1]] = 'right';
+
+    // Type mapping for each position
+    const typeMap = {
+        relation: 'Predicate',
+        left: 'Item',
+        right: 'Item'
+    };
+
+    // Build the Atomese representation for each position
+    function buildPosition(pos) {
+        const type = typeMap[pos];
+        if (miState[pos] === 'selected') {
+            return `(Variable "${varMap[pos]}")`;
+        } else if (miState[pos] === 'fixed') {
+            const value = miState[pos + 'Value'] || '';
+            return `(${type} "${value}")`;
+        } else {
+            return `(Signature (Type '${type}))`;
+        }
+    }
+
+    const relationPart = buildPosition('relation');
+    const leftPart = buildPosition('left');
+    const rightPart = buildPosition('right');
+
+    const pattern = `(Edge ${relationPart} (List ${leftPart} ${rightPart}))`;
+    const pipe = `(Pipe (Name "pair-generator") (Meet (VariableList (Variable "left") (Variable "right")) ${pattern}))`;
+
+    return { pattern, pipe };
+}
+
 function setupMISelector() {
     const positions = ['relation', 'left', 'right'];
 
@@ -484,6 +529,7 @@ function setupMISelector() {
 
         input.addEventListener('input', (e) => {
             miState[pos + 'Value'] = e.target.value;
+            updateMIValidation();
         });
     });
 
@@ -499,6 +545,8 @@ function updateMIValidation() {
 
     const statusEl = document.getElementById('mi-status');
     const computeBtn = document.getElementById('compute-mi-btn');
+    const patternDisplay = document.getElementById('mi-pattern-display');
+    const patternText = document.getElementById('mi-pattern-text');
 
     if (!statusEl || !computeBtn) {
         return;
@@ -510,36 +558,41 @@ function updateMIValidation() {
         statusEl.classList.add('valid');
         statusEl.classList.remove('invalid');
         computeBtn.disabled = false;
+
+        // Display the generated pattern
+        const result = buildMIPattern();
+        if (result && patternDisplay && patternText) {
+            patternText.textContent = result.pattern;
+            patternDisplay.classList.remove('hidden');
+        }
     } else {
         statusEl.textContent = `Select exactly 2 positions for MI computation (currently ${selected.length})`;
         statusEl.classList.remove('valid');
         statusEl.classList.add('invalid');
         computeBtn.disabled = true;
+
+        // Hide pattern display
+        if (patternDisplay) {
+            patternDisplay.classList.add('hidden');
+        }
     }
 }
 
 function computeMI() {
-    const positions = ['relation', 'left', 'right'];
-    const selected = positions.filter(pos => miState[pos] === 'selected');
+    const result = buildMIPattern();
 
-    if (selected.length !== 2) {
+    if (!result) {
         showError('Please select exactly 2 positions for MI computation');
         return;
     }
 
-    // Build configuration object
-    const config = {};
-    positions.forEach(pos => {
-        if (miState[pos] === 'fixed') {
-            config[pos] = { type: 'fixed', value: miState[pos + 'Value'] };
-        } else if (miState[pos] === 'selected') {
-            config[pos] = { type: 'selected' };
-        } else {
-            config[pos] = { type: 'any' };
-        }
-    });
+    if (!analyticsWs || analyticsWs.readyState !== WebSocket.OPEN) {
+        showError('Not connected to analytics server');
+        return;
+    }
 
-    // Placeholder: MI computation will be implemented in a future task
-    console.log('MI computation requested with config:', config);
-    console.log('Selected positions:', selected);
+    console.log('Sending MI pipe to analytics server:', result.pipe);
+
+    // Send the pipe to the analytics server
+    analyticsWs.send(executeAtomese(result.pipe));
 }
