@@ -30,9 +30,9 @@
 		(Rule
 			(VariableList (Variable "left") (Variable "right"))
 			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			; Increment the count on temp anchor
+			; Increment the count on the pattern
 			(IncrementValue
-				(Anchor "temp results fixme later")
+				(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
 				(Predicate "total")
 				(Number 1)))
 		; Input: pairs from the Meet stored on the anchor
