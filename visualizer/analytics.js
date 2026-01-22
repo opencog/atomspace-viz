@@ -506,9 +506,10 @@ function buildMIPattern() {
 
     const pattern = `(Edge ${relationPart}\n    (List ${leftPart} ${rightPart}))`;
     const meet = `(Meet (VariableList (Variable "left") (Variable "right")) ${pattern})`;
-    const pipe = `(Pipe (Name "pair-generator") ${meet})`;
+    // Store the Meet on the analytics anchor for the counting pipeline to reference
+    const setup = `(SetValue (Anchor "analytics") (Predicate "pair generator") ${meet})`;
 
-    return { pattern, meet, pipe };
+    return { pattern, meet, setup };
 }
 
 function setupMISelector() {
@@ -609,8 +610,8 @@ function computeMI() {
         return;
     }
 
-    console.log('Sending MI pipe to analytics server:', result.pipe);
+    console.log('Sending MI setup to analytics server:', result.setup);
 
-    // Send the pipe to the analytics server
-    analyticsWs.send(executeAtomese(result.pipe));
+    // Send the setup to the analytics server
+    analyticsWs.send(executeAtomese(result.setup));
 }
