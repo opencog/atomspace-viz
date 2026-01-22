@@ -7,6 +7,16 @@ let analyticsLoaded = false;
 let pendingCommand = null;
 let analyticsPort = null;   // Computed as main port + 1
 
+// State for MI selector
+const miState = {
+    relation: 'any',
+    left: 'any',
+    right: 'any',
+    relationValue: '',
+    leftValue: '',
+    rightValue: ''
+};
+
 // Wrap atomese s-expression in JSON execute format for the /json endpoint
 function executeAtomese(sexpr) {
     const escaped = sexpr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -50,6 +60,7 @@ function setupEventListeners() {
         analyticsLoaded = false;
         loadAnalytics();
     });
+    setupMISelector();
 }
 
 function connect() {
@@ -451,4 +462,84 @@ function showError(message) {
     } else {
         errorPanel.classList.add('hidden');
     }
+}
+
+// MI Selector functions
+function setupMISelector() {
+    const positions = ['relation', 'left', 'right'];
+
+    positions.forEach(pos => {
+        const select = document.getElementById(`mi-${pos}`);
+        const input = document.getElementById(`mi-${pos}-value`);
+
+        if (!select || !input) {
+            return;
+        }
+
+        select.addEventListener('change', (e) => {
+            miState[pos] = e.target.value;
+            input.classList.toggle('hidden', e.target.value !== 'fixed');
+            updateMIValidation();
+        });
+
+        input.addEventListener('input', (e) => {
+            miState[pos + 'Value'] = e.target.value;
+        });
+    });
+
+    const computeBtn = document.getElementById('compute-mi-btn');
+    if (computeBtn) {
+        computeBtn.addEventListener('click', computeMI);
+    }
+}
+
+function updateMIValidation() {
+    const positions = ['relation', 'left', 'right'];
+    const selected = positions.filter(pos => miState[pos] === 'selected');
+
+    const statusEl = document.getElementById('mi-status');
+    const computeBtn = document.getElementById('compute-mi-btn');
+
+    if (!statusEl || !computeBtn) {
+        return;
+    }
+
+    if (selected.length === 2) {
+        const labels = selected.map(pos => pos.charAt(0).toUpperCase() + pos.slice(1));
+        statusEl.textContent = `Selected: ${labels.join(', ')}`;
+        statusEl.classList.add('valid');
+        statusEl.classList.remove('invalid');
+        computeBtn.disabled = false;
+    } else {
+        statusEl.textContent = `Select exactly 2 positions for MI computation (currently ${selected.length})`;
+        statusEl.classList.remove('valid');
+        statusEl.classList.add('invalid');
+        computeBtn.disabled = true;
+    }
+}
+
+function computeMI() {
+    const positions = ['relation', 'left', 'right'];
+    const selected = positions.filter(pos => miState[pos] === 'selected');
+
+    if (selected.length !== 2) {
+        showError('Please select exactly 2 positions for MI computation');
+        return;
+    }
+
+    // Build configuration object
+    const config = {};
+    positions.forEach(pos => {
+        if (miState[pos] === 'fixed') {
+            config[pos] = { type: 'fixed', value: miState[pos + 'Value'] };
+        } else if (miState[pos] === 'selected') {
+            config[pos] = { type: 'selected' };
+        } else {
+            config[pos] = { type: 'any' };
+        }
+    });
+
+    // Placeholder: MI computation will be implemented in a future task
+    console.log('MI computation requested with config:', config);
+    console.log('Selected positions:', selected);
 }

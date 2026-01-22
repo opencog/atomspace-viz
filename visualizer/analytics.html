@@ -182,6 +182,75 @@
                 </div>
             </section>
 
+            <section id="mi-selector-section" class="analytics-section">
+                <h2>Mutual Information Selector</h2>
+                <p class="section-description">
+                    Select two positions to compute pair-wise mutual information.
+                    The tree represents atoms of the form: <code>(Edge (Predicate "foo") (List (Item "bar") (Item "wat")))</code>
+                </p>
+
+                <div class="mi-tree">
+                    <div class="tree-node root-node">
+                        <span class="node-label">Edge</span>
+                        <div class="tree-children">
+                            <div class="tree-node">
+                                <div class="node-row">
+                                    <span class="node-label">Relation</span>
+                                    <select id="mi-relation" class="mi-select">
+                                        <option value="any">any</option>
+                                        <option value="fixed">fixed</option>
+                                        <option value="selected">selected</option>
+                                    </select>
+                                    <input type="text" id="mi-relation-value"
+                                           class="mi-value-input hidden"
+                                           placeholder="Enter predicate...">
+                                </div>
+                            </div>
+                            <div class="tree-node list-node">
+                                <span class="node-label">List</span>
+                                <div class="tree-children">
+                                    <div class="tree-node">
+                                        <div class="node-row">
+                                            <span class="node-label">Left</span>
+                                            <select id="mi-left" class="mi-select">
+                                                <option value="any">any</option>
+                                                <option value="fixed">fixed</option>
+                                                <option value="selected">selected</option>
+                                            </select>
+                                            <input type="text" id="mi-left-value"
+                                                   class="mi-value-input hidden"
+                                                   placeholder="Enter left item...">
+                                        </div>
+                                    </div>
+                                    <div class="tree-node">
+                                        <div class="node-row">
+                                            <span class="node-label">Right</span>
+                                            <select id="mi-right" class="mi-select">
+                                                <option value="any">any</option>
+                                                <option value="fixed">fixed</option>
+                                                <option value="selected">selected</option>
+                                            </select>
+                                            <input type="text" id="mi-right-value"
+                                                   class="mi-value-input hidden"
+                                                   placeholder="Enter right item...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mi-status" id="mi-status">
+                    Select exactly 2 positions for MI computation
+                </div>
+
+                <button id="compute-mi-btn" class="btn-primary" disabled>
+                    <span class="btn-icon">&#128202;</span>
+                    <span class="btn-text">Compute MI</span>
+                </button>
+            </section>
+
             <section id="loading-panel" class="loading hidden">
                 <div class="spinner"></div>
                 <p id="loading-message">Loading...</p>

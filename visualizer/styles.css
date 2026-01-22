@@ -728,6 +728,150 @@ footer a:hover {
     animation: pulse 2s infinite;
 }
 
+/* MI Selector Tree Visualization */
+.analytics-section {
+    margin-top: 20px;
+}
+
+.analytics-section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    font-weight: 500;
+    border-bottom: 2px solid var(--primary-light);
+    padding-bottom: 10px;
+}
+
+.section-description {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.section-description code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 0.85em;
+}
+
+.mi-tree {
+    background: var(--background);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin: 15px 0;
+    border: 1px solid var(--border-color);
+}
+
+.tree-node {
+    padding: 8px 0;
+    position: relative;
+}
+
+.tree-children {
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 2px solid var(--border-color);
+}
+
+.tree-children .tree-node::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    width: 15px;
+    height: 2px;
+    background: var(--border-color);
+}
+
+.node-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.node-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 80px;
+}
+
+.root-node > .node-label {
+    font-size: 1.1rem;
+    color: var(--primary-dark);
+}
+
+.list-node > .node-label {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.mi-select {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mi-select:hover {
+    border-color: var(--primary-color);
+}
+
+.mi-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.mi-value-input {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background: var(--surface);
+    color: var(--text-primary);
+    width: 200px;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.mi-value-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.mi-value-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.mi-status {
+    margin: 15px 0;
+    font-size: 14px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background: var(--background);
+}
+
+.mi-status.valid {
+    color: var(--success-color);
+    background: rgba(76, 175, 80, 0.1);
+    border-left: 3px solid var(--success-color);
+}
+
+.mi-status.invalid {
+    color: var(--text-secondary);
+}
+
+#compute-mi-btn {
+    margin-top: 10px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .theme-toggle {
@@ -774,5 +918,15 @@ footer a:hover {
     .refresh-panel {
         flex-direction: column;
         gap: 15px;
+    }
+
+    .node-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .mi-value-input {
+        width: 100%;
+        max-width: 200px;
     }
 }
