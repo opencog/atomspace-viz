@@ -22,8 +22,8 @@ function executeAtomese(sexpr) {
     const escaped = sexpr
         .replace(/\\/g, '\\\\')
         .replace(/"/g, '\\"')
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r');
+        .replace(/[\n\r]+/g, ' ')
+        .replace(/\s+/g, ' ');
     return `{ "tool": "execute", "params": { "atomese": "${escaped}" } }`;
 }
 
