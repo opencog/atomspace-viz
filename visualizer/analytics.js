@@ -504,10 +504,11 @@ function buildMIPattern() {
     const leftPart = buildPosition('left');
     const rightPart = buildPosition('right');
 
-    const pattern = `(Edge ${relationPart} (List ${leftPart} ${rightPart}))`;
-    const pipe = `(Pipe (Name "pair-generator") (Meet (VariableList (Variable "left") (Variable "right")) ${pattern}))`;
+    const pattern = `(Edge ${relationPart}\n    (List ${leftPart} ${rightPart}))`;
+    const meet = `(Meet (VariableList (Variable "left") (Variable "right")) ${pattern})`;
+    const pipe = `(Pipe (Name "pair-generator") ${meet})`;
 
-    return { pattern, pipe };
+    return { pattern, meet, pipe };
 }
 
 function setupMISelector() {
