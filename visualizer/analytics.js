@@ -19,7 +19,11 @@ const miState = {
 
 // Wrap atomese s-expression in JSON execute format for the /json endpoint
 function executeAtomese(sexpr) {
-    const escaped = sexpr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const escaped = sexpr
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r');
     return `{ "tool": "execute", "params": { "atomese": "${escaped}" } }`;
 }
 
@@ -610,7 +614,14 @@ function computeMI() {
         return;
     }
 
+    // Disable button while processing
+    const btn = document.getElementById('compute-mi-btn');
+    if (btn) btn.disabled = true;
+
+    showLoading(true, 'Setting up pair generator...');
+
     console.log('Sending MI setup to analytics server:', result.setup);
+    console.log('Atomese command:', executeAtomese(result.setup));
 
     // Send the setup to the analytics server
     analyticsWs.send(executeAtomese(result.setup));
