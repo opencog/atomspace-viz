@@ -521,6 +521,10 @@ function setupMISelector() {
             return;
         }
 
+        // Initialize state from current DOM values
+        miState[pos] = select.value;
+        miState[pos + 'Value'] = input.value;
+
         select.addEventListener('change', (e) => {
             miState[pos] = e.target.value;
             input.classList.toggle('hidden', e.target.value !== 'fixed');
@@ -541,6 +545,19 @@ function setupMISelector() {
 
 function updateMIValidation() {
     const positions = ['relation', 'left', 'right'];
+
+    // Sync state from DOM to ensure consistency
+    positions.forEach(pos => {
+        const select = document.getElementById(`mi-${pos}`);
+        const input = document.getElementById(`mi-${pos}-value`);
+        if (select) {
+            miState[pos] = select.value;
+        }
+        if (input) {
+            miState[pos + 'Value'] = input.value;
+        }
+    });
+
     const selected = positions.filter(pos => miState[pos] === 'selected');
 
     const statusEl = document.getElementById('mi-status');
