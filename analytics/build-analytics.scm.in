@@ -28,6 +28,7 @@
 ; Load the main analytics file(s)
 ; Add additional (load ...) statements here as more components are created
 (load (string-append source-dir "/count-types.scm"))
+(load (string-append source-dir "/pair-mi.scm"))
 (load (string-append source-dir "/analytics-server.scm"))
 
 ; Create RocksStorageNode and store everything
