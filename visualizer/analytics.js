@@ -5,6 +5,7 @@ let ws = null;              // Connection to main cogserver
 let analyticsWs = null;     // Connection to analytics server
 let analyticsLoaded = false;
 let pendingCommand = null;
+let analyticsPendingCommand = null;  // 'mi-setup' or 'type-counts'
 let analyticsPort = null;   // Computed as main port + 1
 
 // State for MI selector
@@ -173,6 +174,7 @@ function runTypeCounts() {
     document.getElementById('run-type-counts').disabled = true;
     showLoading(true, 'Running type-counts pipeline...');
 
+    analyticsPendingCommand = 'type-counts';
     console.log('Running type-counts pipeline on analytics server');
     analyticsWs.send(executeAtomese(TYPE_COUNTS));
 }
@@ -283,13 +285,17 @@ function connectToAnalyticsServer() {
 
 function handleAnalyticsResponse(data) {
     console.log('Analytics raw response:', data);
+    const currentCommand = analyticsPendingCommand;
+    analyticsPendingCommand = null;
 
     let response;
     try {
         response = JSON.parse(data);
     } catch (e) {
         console.log('Non-JSON analytics response:', data);
-        displayTypeCountsResult(data);
+        if (currentCommand === 'type-counts') {
+            displayTypeCountsResult(data);
+        }
         return;
     }
 
@@ -300,24 +306,39 @@ function handleAnalyticsResponse(data) {
             showError('Analytics error: ' + errorText);
             showLoading(false);
             document.getElementById('run-type-counts').disabled = false;
+            document.getElementById('compute-mi-btn').disabled = false;
             return;
         }
 
         const contentText = response.content[0]?.text || '';
         console.log('Analytics content text:', contentText);
 
-        try {
-            const result = JSON.parse(contentText);
-            displayTypeCountsResult(result);
-        } catch (e) {
-            displayTypeCountsResult(contentText);
+        if (currentCommand === 'mi-setup') {
+            console.log('MI setup complete');
+            showLoading(false);
+            document.getElementById('compute-mi-btn').disabled = false;
+            // TODO: Could trigger pair-counter here or show success message
+        } else {
+            try {
+                const result = JSON.parse(contentText);
+                displayTypeCountsResult(result);
+            } catch (e) {
+                displayTypeCountsResult(contentText);
+            }
+            showLoading(false);
+            document.getElementById('run-type-counts').disabled = false;
         }
     } else {
-        displayTypeCountsResult(response);
+        if (currentCommand === 'mi-setup') {
+            console.log('MI setup complete');
+            showLoading(false);
+            document.getElementById('compute-mi-btn').disabled = false;
+        } else {
+            displayTypeCountsResult(response);
+            showLoading(false);
+            document.getElementById('run-type-counts').disabled = false;
+        }
     }
-    showLoading(false);
-    // Re-enable button after results
-    document.getElementById('run-type-counts').disabled = false;
 }
 
 function displayTypeCountsResult(result) {
@@ -624,6 +645,7 @@ function computeMI() {
     console.log('Sending MI setup to analytics server:', result.setup);
     console.log('Atomese command:', executeAtomese(result.setup));
 
+    analyticsPendingCommand = 'mi-setup';
     // Send the setup to the analytics server
     analyticsWs.send(executeAtomese(result.setup));
 }
