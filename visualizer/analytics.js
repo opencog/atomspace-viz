@@ -604,10 +604,12 @@ function displayMIHistogram(result) {
         return;
     }
 
-    // Bin the MI values: 200 bins of width 0.1, range [-10, +10)
-    // bin = floor(MI * 10) + 100
-    const binWidth = 0.1;
-    const bins = new Array(200).fill(0);
+    // Bin the MI values: 1600 bins of width 0.05, range [-40, +40)
+    // bin = floor(MI / 0.05) + 800 = floor(MI * 20) + 800
+    const binWidth = 0.05;
+    const numTotalBins = 1600;
+    const binOffset = 800;  // Offset so bin 0 corresponds to MI = -40
+    const bins = new Array(numTotalBins).fill(0);
     let minMI = Infinity, maxMI = -Infinity;
 
     for (const mi of miValues) {
@@ -615,8 +617,8 @@ function displayMIHistogram(result) {
         minMI = Math.min(minMI, mi);
         maxMI = Math.max(maxMI, mi);
 
-        const bin = Math.floor(mi * 10) + 100;
-        if (bin >= 0 && bin < 200) {
+        const bin = Math.floor(mi / binWidth) + binOffset;
+        if (bin >= 0 && bin < numTotalBins) {
             bins[bin]++;
         }
     }
@@ -637,8 +639,8 @@ function displayMIHistogram(result) {
     }
 
     // Add padding around the range
-    firstNonZero = Math.max(0, firstNonZero - 5);
-    lastNonZero = Math.min(199, lastNonZero + 5);
+    firstNonZero = Math.max(0, firstNonZero - 10);
+    lastNonZero = Math.min(numTotalBins - 1, lastNonZero + 10);
 
     const maxDensity = Math.max(...density.slice(firstNonZero, lastNonZero + 1));
     const numBins = lastNonZero - firstNonZero + 1;
@@ -750,7 +752,7 @@ function displayMIHistogram(result) {
     const xTickCount = Math.min(10, numBins);
     const xTickStep = Math.ceil(numBins / xTickCount);
     for (let i = firstNonZero; i <= lastNonZero; i += xTickStep) {
-        const miVal = (i - 100) / 10;
+        const miVal = (i - binOffset) * binWidth;
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', xScale(i));
         text.setAttribute('y', margin.top + plotHeight + 20);
