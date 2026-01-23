@@ -43,35 +43,39 @@
 					(VariableList (Variable "left") (Variable "right"))
 					(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
 					; All increments - return value ignored by True
+					; DontExec prevents execution of the atoms we're incrementing on
 					(LinkValue
-						; 1. Total count on the generator
+						; 1. Total count on the generator (LiteralValueOf returns DontExec(Meet))
 						(IncrementValue
 							(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
 							(Predicate "total")
 							(Number 1))
 						; 2. Left marginal - count for this left item across all right items
 						(IncrementValue
-							(Meet
-								(Variable "$R")
-								(Put
-									(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
-									(List (Variable "left") (Variable "$R"))))
+							(DontExec
+								(Meet
+									(Variable "$R")
+									(Put
+										(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+										(List (Variable "left") (Variable "$R")))))
 							(Predicate "count")
 							(Number 1))
 						; 3. Right marginal - count for this right item across all left items
 						(IncrementValue
-							(Meet
-								(Variable "$L")
-								(Put
-									(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
-									(List (Variable "$L") (Variable "right"))))
+							(DontExec
+								(Meet
+									(Variable "$L")
+									(Put
+										(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+										(List (Variable "$L") (Variable "right")))))
 							(Predicate "count")
 							(Number 1))
 						; 4. Pair count - count for this specific pair
 						(IncrementValue
-							(Put
-								(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
-								(List (Variable "left") (Variable "right")))
+							(DontExec
+								(Put
+									(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+									(List (Variable "left") (Variable "right"))))
 							(Predicate "count")
 							(Number 1))))
 				; Input: pairs from the Meet stored on the anchor
