@@ -128,6 +128,24 @@
         .results-summary h4 {
             margin: 0 0 10px 0;
         }
+
+        .mi-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--background);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+        }
+
+        .mi-result label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .mi-result span {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
     </style>
     <script src="analytics.js"></script>
 </head>
@@ -254,6 +272,11 @@
                     <span class="btn-icon">&#128202;</span>
                     <span class="btn-text">Compute MI</span>
                 </button>
+
+                <div id="mi-result" class="mi-result hidden">
+                    <label>Result:</label>
+                    <span id="mi-count-value"></span>
+                </div>
             </section>
 
             <section id="loading-panel" class="loading hidden">

@@ -54,6 +54,12 @@ function makeLoadAnalytics(port) {
 // Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
+// Trigger the pair-counter pipeline
+const TRIGGER_PAIR_COUNTER = '(Trigger (Name "pair-counter"))';
+
+// Fetch the pair count from the Meet pattern
+const GET_PAIR_COUNT = '(Trigger (ValueOf (LiteralValueOf (Anchor "analytics") (Predicate "pair generator")) (Predicate "total")))';
+
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     connect();
@@ -314,10 +320,31 @@ function handleAnalyticsResponse(data) {
         console.log('Analytics content text:', contentText);
 
         if (currentCommand === 'mi-setup') {
-            console.log('MI setup complete');
+            // Step 2: Trigger the pair-counter
+            console.log('MI setup complete, triggering pair-counter');
+            showLoading(true, 'Counting pairs...');
+            analyticsPendingCommand = 'mi-counting';
+            analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
+            return;
+        } else if (currentCommand === 'mi-counting') {
+            // Step 3: Fetch the count
+            console.log('Pair counting complete, fetching count');
+            showLoading(true, 'Fetching count...');
+            analyticsPendingCommand = 'mi-fetch-count';
+            analyticsWs.send(executeAtomese(GET_PAIR_COUNT));
+            return;
+        } else if (currentCommand === 'mi-fetch-count') {
+            // Step 4: Display the result
+            console.log('Got pair count result:', contentText);
+            try {
+                const countResult = JSON.parse(contentText);
+                displayMIResult(countResult);
+            } catch (e) {
+                displayMIResult(contentText);
+            }
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
-            // TODO: Could trigger pair-counter here or show success message
+            return;
         } else {
             try {
                 const result = JSON.parse(contentText);
@@ -330,7 +357,21 @@ function handleAnalyticsResponse(data) {
         }
     } else {
         if (currentCommand === 'mi-setup') {
-            console.log('MI setup complete');
+            // Step 2: Trigger the pair-counter
+            console.log('MI setup complete (non-JSON), triggering pair-counter');
+            showLoading(true, 'Counting pairs...');
+            analyticsPendingCommand = 'mi-counting';
+            analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
+        } else if (currentCommand === 'mi-counting') {
+            // Step 3: Fetch the count
+            console.log('Pair counting complete (non-JSON), fetching count');
+            showLoading(true, 'Fetching count...');
+            analyticsPendingCommand = 'mi-fetch-count';
+            analyticsWs.send(executeAtomese(GET_PAIR_COUNT));
+        } else if (currentCommand === 'mi-fetch-count') {
+            // Step 4: Display the result
+            console.log('Got pair count result (non-JSON):', response);
+            displayMIResult(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
         } else {
@@ -454,6 +495,38 @@ function displayTypeCountsResult(result) {
 
     chartContainer.classList.remove('hidden');
     summaryPanel.classList.remove('hidden');
+}
+
+function displayMIResult(result) {
+    console.log('MI result:', result);
+
+    const resultEl = document.getElementById('mi-result');
+    const countEl = document.getElementById('mi-count-value');
+
+    if (!resultEl || !countEl) {
+        console.error('MI result elements not found');
+        return;
+    }
+
+    let count = 0;
+
+    // Parse the result - expecting FloatValue format:
+    // { "type": "FloatValue", "value": [count] }
+    if (result && result.type === 'FloatValue' && Array.isArray(result.value)) {
+        count = result.value[0] || 0;
+    } else if (typeof result === 'number') {
+        count = result;
+    } else if (typeof result === 'string') {
+        // Try to parse as number
+        const parsed = parseFloat(result);
+        if (!isNaN(parsed)) {
+            count = parsed;
+        }
+    }
+
+    count = Math.round(count);
+    countEl.textContent = count.toLocaleString() + ' pairs found';
+    resultEl.classList.remove('hidden');
 }
 
 function enableControls() {
