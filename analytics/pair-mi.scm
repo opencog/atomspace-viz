@@ -85,7 +85,7 @@
 			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
 ; Pipeline to compute stats for left marginals
-; Meet returns individual X atoms; Filter matches each and computes stats on (List X wildcard)
+; Meet returns individual X atoms (ConceptNodes only); compute stats on (List X wildcard)
 (PipeLink (Name "compute-left-stats")
 	(True
 		(Filter
@@ -94,11 +94,11 @@
 				(SetValue (List (Variable "$X") (Any "right wildcard")) (Any "stats")
 					(ExecutionOutput (DefinedProcedure "compute-stats-value")
 						(List (Variable "$X") (Any "right wildcard")))))
-			(Meet (Variable "$X")
+			(Meet (TypedVariable (Variable "$X") (Type 'ConceptNode))
 				(Present (List (Variable "$X") (Any "right wildcard")))))))
 
 ; Pipeline to compute stats for right marginals
-; Meet returns individual Y atoms; Filter matches each and computes stats on (List wildcard Y)
+; Meet returns individual Y atoms (ConceptNodes only); compute stats on (List wildcard Y)
 (PipeLink (Name "compute-right-stats")
 	(True
 		(Filter
@@ -107,7 +107,7 @@
 				(SetValue (List (Any "left wildcard") (Variable "$Y")) (Any "stats")
 					(ExecutionOutput (DefinedProcedure "compute-stats-value")
 						(List (Any "left wildcard") (Variable "$Y")))))
-			(Meet (Variable "$Y")
+			(Meet (TypedVariable (Variable "$Y") (Type 'ConceptNode))
 				(Present (List (Any "left wildcard") (Variable "$Y")))))))
 
 ; Master pipeline: compute all stats
