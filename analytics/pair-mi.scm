@@ -16,52 +16,24 @@
 ;   - (List (Predicate "right") <item>): right marginal count
 ;   - (List (Predicate "pair") <left> <right>): pair count
 ;
+; The Meet runs ONCE and all 4 counts are updated in a single pass.
+;
 (use-modules (opencog))
 
 ; ---------------------------------------------------------------
-; Individual counting pipelines - each Filter handles one count type.
-; (LinkValue is a Value and can't be stored, so we use separate Filters)
-
-; Count total pairs
-(PipeLink (Name "count-total")
-	(True (Filter
-		(Rule (VariableList (Variable "left") (Variable "right"))
-			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			(IncrementValue (Anchor "analytics") (Predicate "total") (Number 1)))
-		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
-
-; Count left marginals
-(PipeLink (Name "count-left")
-	(True (Filter
-		(Rule (VariableList (Variable "left") (Variable "right"))
-			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			(IncrementValue (Anchor "analytics") (List (Predicate "left") (Variable "left")) (Number 1)))
-		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
-
-; Count right marginals
-(PipeLink (Name "count-right")
-	(True (Filter
-		(Rule (VariableList (Variable "left") (Variable "right"))
-			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			(IncrementValue (Anchor "analytics") (List (Predicate "right") (Variable "right")) (Number 1)))
-		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
-
-; Count pairs
-(PipeLink (Name "count-pairs")
-	(True (Filter
-		(Rule (VariableList (Variable "left") (Variable "right"))
-			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			(IncrementValue (Anchor "analytics") (List (Predicate "pair") (Variable "left") (Variable "right")) (Number 1)))
-		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
-
-; ---------------------------------------------------------------
-; Master pipeline: run all 4 counting pipelines
+; Single-pass counting pipeline.
+; For each pair, True executes all 4 IncrementValues.
 (PipeLink (Name "pair-counter")
 	(True
-		(Name "count-total")
-		(Name "count-left")
-		(Name "count-right")
-		(Name "count-pairs")))
+		(Filter
+			(Rule (VariableList (Variable "left") (Variable "right"))
+				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+				(True
+					(IncrementValue (Anchor "analytics") (Predicate "total") (Number 1))
+					(IncrementValue (Anchor "analytics") (List (Predicate "left") (Variable "left")) (Number 1))
+					(IncrementValue (Anchor "analytics") (List (Predicate "right") (Variable "right")) (Number 1))
+					(IncrementValue (Anchor "analytics") (List (Predicate "pair") (Variable "left") (Variable "right")) (Number 1))))
+			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
 ; Fetch the total count
 (PipeLink (Name "get total count")
