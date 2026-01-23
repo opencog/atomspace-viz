@@ -55,22 +55,22 @@
 ; Define the total atom for convenience
 (define total-atom (List (Any "left wildcard") (Any "right wildcard")))
 
-; Define procedure to compute stats for a given atom
-; Takes an atom and computes (FloatValue count prob entropy)
+; Define procedure to compute stats for a pair atom
+; Takes left and right, returns (FloatValue count prob entropy)
 (DefineLink
-	(DefinedProcedure "compute-stats")
-	(Lambda (Variable "$atom")
-		(SetValue (Variable "$atom") (Any "stats")
-			(LinkSignature (Type 'FloatValue)
-				(FloatValueOf (Variable "$atom") (Any "count"))
-				(Divide
-					(FloatValueOf (Variable "$atom") (Any "count"))
-					(FloatValueOf total-atom (Any "count")))
-				(Minus (Number 0)
-					(Log2
-						(Divide
-							(FloatValueOf (Variable "$atom") (Any "count"))
-							(FloatValueOf total-atom (Any "count")))))))))
+	(DefinedProcedure "compute-stats-value")
+	(Lambda
+		(VariableList (Variable "$L") (Variable "$R"))
+		(LinkSignature (Type 'FloatValue)
+			(FloatValueOf (List (Variable "$L") (Variable "$R")) (Any "count"))
+			(Divide
+				(FloatValueOf (List (Variable "$L") (Variable "$R")) (Any "count"))
+				(FloatValueOf total-atom (Any "count")))
+			(Minus (Number 0)
+				(Log2
+					(Divide
+						(FloatValueOf (List (Variable "$L") (Variable "$R")) (Any "count"))
+						(FloatValueOf total-atom (Any "count"))))))))
 
 ; Pipeline to compute stats for all pairs
 ; Uses the cached Meet result to iterate over pairs
@@ -79,8 +79,9 @@
 		(Filter
 			(Rule (VariableList (Variable "left") (Variable "right"))
 				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-				(ExecutionOutput (DefinedProcedure "compute-stats")
-					(List (Variable "left") (Variable "right"))))
+				(SetValue (List (Variable "left") (Variable "right")) (Any "stats")
+					(ExecutionOutput (DefinedProcedure "compute-stats-value")
+						(List (Variable "left") (Variable "right")))))
 			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
 ; Pipeline to compute stats for left marginals
@@ -90,8 +91,9 @@
 		(Filter
 			(Rule (Variable "$X")
 				(LinkSignature (Type 'ListLink) (Variable "$X") (Any "right wildcard"))
-				(ExecutionOutput (DefinedProcedure "compute-stats")
-					(List (Variable "$X") (Any "right wildcard"))))
+				(SetValue (List (Variable "$X") (Any "right wildcard")) (Any "stats")
+					(ExecutionOutput (DefinedProcedure "compute-stats-value")
+						(List (Variable "$X") (Any "right wildcard")))))
 			(Meet (Variable "$X")
 				(Present (List (Variable "$X") (Any "right wildcard")))))))
 
@@ -102,8 +104,9 @@
 		(Filter
 			(Rule (Variable "$Y")
 				(LinkSignature (Type 'ListLink) (Any "left wildcard") (Variable "$Y"))
-				(ExecutionOutput (DefinedProcedure "compute-stats")
-					(List (Any "left wildcard") (Variable "$Y"))))
+				(SetValue (List (Any "left wildcard") (Variable "$Y")) (Any "stats")
+					(ExecutionOutput (DefinedProcedure "compute-stats-value")
+						(List (Any "left wildcard") (Variable "$Y")))))
 			(Meet (Variable "$Y")
 				(Present (List (Any "left wildcard") (Variable "$Y")))))))
 
