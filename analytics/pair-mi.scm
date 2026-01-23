@@ -48,14 +48,9 @@
 
 ; Stage 2: Extract the FloatValue count from the pair-counter result
 ; The pair-counter returns (LinkValue (BoolValue 1) (FloatValue count))
-; Filter iterates over the LinkValue elements, matching only the FloatValue
+; Use ElementOf to get element at index 1 (the FloatValue)
 (PipeLink
 	(Name "get total count")
-	(Filter
-		(Rule
-			(Variable "$x")
-			(Signature (Type 'FloatValue))
-			(Variable "$x"))
-		(Name "pair-counter")))
+	(ElementOf (Number 1) (Name "pair-counter")))
 
 ; ---------------------------------------------------------------
