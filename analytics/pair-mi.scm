@@ -27,58 +27,57 @@
 ;   3. Right marginal: Lambda for this right item (via Put on right marginal)
 ;   4. Pair count: Lambda for this specific pair (via Put on pair premise)
 ;
+; Note: We don't use PureExec because we want counts to persist in main atomspace.
+;
 (PipeLink
 	(Name "pair-counter")
-	(PureExec
-		; Count all pairs and build marginal/pair counts
-		(True
-			(Filter
-				(Rule
-					(VariableList (Variable "left") (Variable "right"))
-					(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-					; All increments - return value ignored by True
-					(LinkValue
-						; 1. Total count on the pair premise Lambda
-						(IncrementValue
+	; Count all pairs and build marginal/pair counts
+	; Returns BoolValue(true) when complete
+	(True
+		(Filter
+			(Rule
+				(VariableList (Variable "left") (Variable "right"))
+				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+				; All increments - return value ignored by True
+				(LinkValue
+					; 1. Total count on the pair premise Lambda
+					(IncrementValue
+						(ValueOf (Anchor "analytics") (Predicate "pair premise"))
+						(Predicate "total")
+						(Number 1))
+					; 2. Left marginal - count for this left item across all right items
+					;    Put left value into left marginal Lambda to get the specific Lambda
+					(IncrementValue
+						(Put
+							(ValueOf (Anchor "analytics") (Predicate "left marginal"))
+							(Variable "left"))
+						(Predicate "count")
+						(Number 1))
+					; 3. Right marginal - count for this right item across all left items
+					;    Put right value into right marginal Lambda to get the specific Lambda
+					(IncrementValue
+						(Put
+							(ValueOf (Anchor "analytics") (Predicate "right marginal"))
+							(Variable "right"))
+						(Predicate "count")
+						(Number 1))
+					; 4. Pair count - count for this specific pair
+					;    Put (left, right) into pair premise to get the specific edge Lambda
+					(IncrementValue
+						(Put
 							(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-							(Predicate "total")
-							(Number 1))
-						; 2. Left marginal - count for this left item across all right items
-						;    Put left value into left marginal Lambda to get the specific Lambda
-						(IncrementValue
-							(Put
-								(ValueOf (Anchor "analytics") (Predicate "left marginal"))
-								(Variable "left"))
-							(Predicate "count")
-							(Number 1))
-						; 3. Right marginal - count for this right item across all left items
-						;    Put right value into right marginal Lambda to get the specific Lambda
-						(IncrementValue
-							(Put
-								(ValueOf (Anchor "analytics") (Predicate "right marginal"))
-								(Variable "right"))
-							(Predicate "count")
-							(Number 1))
-						; 4. Pair count - count for this specific pair
-						;    Put (left, right) into pair premise to get the specific edge Lambda
-						(IncrementValue
-							(Put
-								(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-								(List (Variable "left") (Variable "right")))
-							(Predicate "count")
-							(Number 1))))
-				; Input: pairs from the Meet stored on the anchor
-				(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
-		; Fetch and return the total count from the pair premise Lambda
-		(ValueOf
-			(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-			(Predicate "total"))))
+							(List (Variable "left") (Variable "right")))
+						(Predicate "count")
+						(Number 1))))
+			; Input: pairs from the Meet stored on the anchor
+			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
-; Stage 2: Extract the FloatValue count from the pair-counter result
-; The pair-counter returns (LinkValue (BoolValue 1) (FloatValue count))
-; Use ElementOf to get element at index 1 (the FloatValue)
+; Stage 2: Fetch the total count from pair premise Lambda
+; Call this AFTER pair-counter has been triggered
 (PipeLink
 	(Name "get total count")
-	(ElementOf (Number 1) (Name "pair-counter")))
+	(ValueOf
+		(ValueOf (Anchor "analytics") (Predicate "pair premise"))
+		(Predicate "total")))
 
 ; ---------------------------------------------------------------
