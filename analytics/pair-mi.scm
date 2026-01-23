@@ -11,10 +11,10 @@
 ;   - "pair generator": DontExec(Meet) for generating pairs
 ;
 ; Counts are stored on the Anchor "analytics" with compound keys:
-;   - (Predicate "total"): total pair count
-;   - (List (Predicate "left") <item>): left marginal count
-;   - (List (Predicate "right") <item>): right marginal count
-;   - (List (Predicate "pair") <left> <right>): pair count
+;   - (Any "total"): total pair count
+;   - (List (Any "left") <item>): left marginal count
+;   - (List (Any "right") <item>): right marginal count
+;   - (List (Any "pair") <left> <right>): pair count
 ;
 ; The Meet runs ONCE and all 4 counts are updated in a single pass.
 ;
@@ -29,14 +29,14 @@
 			(Rule (VariableList (Variable "left") (Variable "right"))
 				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
 				(True
-					(IncrementValue (Anchor "analytics") (Predicate "total") (Number 1))
-					(IncrementValue (Anchor "analytics") (List (Predicate "left") (Variable "left")) (Number 1))
-					(IncrementValue (Anchor "analytics") (List (Predicate "right") (Variable "right")) (Number 1))
-					(IncrementValue (Anchor "analytics") (List (Predicate "pair") (Variable "left") (Variable "right")) (Number 1))))
+					(IncrementValue (Anchor "analytics") (Any "total") (Number 1))
+					(IncrementValue (Anchor "analytics") (List (Any "left") (Variable "left")) (Number 1))
+					(IncrementValue (Anchor "analytics") (List (Any "right") (Variable "right")) (Number 1))
+					(IncrementValue (Anchor "analytics") (List (Any "pair") (Variable "left") (Variable "right")) (Number 1))))
 			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
 ; Fetch the total count
 (PipeLink (Name "get total count")
-	(ValueOf (Anchor "analytics") (Predicate "total")))
+	(ValueOf (Anchor "analytics") (Any "total")))
 
 ; ---------------------------------------------------------------
