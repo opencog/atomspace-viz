@@ -85,12 +85,12 @@
 			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
 ; Pipeline to compute stats for left marginals
-; Query: find all (List X (Any "right wildcard")) atoms
+; Meet returns individual X atoms; Filter matches each and computes stats on (List X wildcard)
 (PipeLink (Name "compute-left-stats")
 	(True
 		(Filter
 			(Rule (Variable "$X")
-				(LinkSignature (Type 'ListLink) (Variable "$X") (Any "right wildcard"))
+				(Variable "$X")
 				(SetValue (List (Variable "$X") (Any "right wildcard")) (Any "stats")
 					(ExecutionOutput (DefinedProcedure "compute-stats-value")
 						(List (Variable "$X") (Any "right wildcard")))))
@@ -98,12 +98,12 @@
 				(Present (List (Variable "$X") (Any "right wildcard")))))))
 
 ; Pipeline to compute stats for right marginals
-; Query: find all (List (Any "left wildcard") Y) atoms
+; Meet returns individual Y atoms; Filter matches each and computes stats on (List wildcard Y)
 (PipeLink (Name "compute-right-stats")
 	(True
 		(Filter
 			(Rule (Variable "$Y")
-				(LinkSignature (Type 'ListLink) (Any "left wildcard") (Variable "$Y"))
+				(Variable "$Y")
 				(SetValue (List (Any "left wildcard") (Variable "$Y")) (Any "stats")
 					(ExecutionOutput (DefinedProcedure "compute-stats-value")
 						(List (Any "left wildcard") (Variable "$Y")))))
