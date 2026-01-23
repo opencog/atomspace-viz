@@ -57,19 +57,20 @@
 
 ; Define procedure to compute stats for a given atom
 ; Takes an atom and computes (FloatValue count prob entropy)
-(Define (DefinedProcedure "compute-stats")
+(DefineLink
+	(DefinedProcedure "compute-stats")
 	(Lambda (Variable "$atom")
 		(SetValue (Variable "$atom") (Any "stats")
 			(Accumulate
-				(ValueOf (Variable "$atom") (Any "count"))
+				(FloatValueOf (Variable "$atom") (Any "count"))
 				(Divide
-					(ValueOf (Variable "$atom") (Any "count"))
-					(ValueOf total-atom (Any "count")))
+					(FloatValueOf (Variable "$atom") (Any "count"))
+					(FloatValueOf total-atom (Any "count")))
 				(Minus (Number 0)
 					(Log2
 						(Divide
-							(ValueOf (Variable "$atom") (Any "count"))
-							(ValueOf total-atom (Any "count")))))))))
+							(FloatValueOf (Variable "$atom") (Any "count"))
+							(FloatValueOf total-atom (Any "count")))))))))
 
 ; Pipeline to compute stats for all pairs
 ; Uses the cached Meet result to iterate over pairs
