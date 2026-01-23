@@ -157,16 +157,55 @@
 		(Name "compute-mi")))
 
 ; ---------------------------------------------------------------
-; MI Histogram: collect all MI values for visualization
-; Returns a stream of MI values that JavaScript will bin
+; MI Histogram: bin-count MI values in Atomese
+; 1600 bins of width 0.05, range [-40, +40)
+; bin = floor(MI / 0.05) + 800
 
-; Pipeline to collect all MI values as a flat list
-; Returns LinkValue containing all MI FloatValues
-(PipeLink (Name "get-mi-values")
+; Procedure to compute bin index from MI value
+; Returns a NumberNode for the bin
+(DefineLink
+	(DefinedProcedure "compute-mi-bin")
+	(Lambda
+		(VariableList (Variable "$L") (Variable "$R"))
+		(LinkSignature (Type 'NumberNode)
+			(Plus (Number 800)
+				(Floor
+					(Times (Number 20)
+						(FloatValueOf (List (Variable "$L") (Variable "$R")) (Any "mi"))))))))
+
+; Pipeline to bin all MI values
+; Stores counts on (Anchor "mi-histogram") with key (Number bin-index)
+; Bin computation: bin = floor(MI * 20) + 800
+(PipeLink (Name "bin-mi")
+	(True
+		(Filter
+			(Rule (VariableList (Variable "left") (Variable "right"))
+				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+				(IncrementValue
+					(Anchor "mi-histogram")
+					(LinkSignature (Type 'NumberNode)
+						(Plus (Number 800)
+							(Floor
+								(Times (Number 20)
+									(FloatValueOf (List (Variable "left") (Variable "right")) (Any "mi"))))))
+					(Number 1)))
+			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; Pipeline to get histogram as table of (bin-index, count) pairs
+; Returns LinkValue of (LinkValue bin-number count) for non-zero bins
+(PipeLink (Name "get-mi-histogram")
 	(Filter
-		(Rule (VariableList (Variable "left") (Variable "right"))
-			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			(FloatValueOf (List (Variable "left") (Variable "right")) (Any "mi")))
-		(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
+		(Rule (Variable "$key")
+			(Variable "$key")
+			(LinkSignature (Type 'LinkValue)
+				(Variable "$key")
+				(FloatValueOf (Anchor "mi-histogram") (Variable "$key"))))
+		(KeysOf (Anchor "mi-histogram"))))
+
+; Master pipeline: run MI computation and build histogram
+(PipeLink (Name "run-mi-histogram")
+	(True
+		(Name "run-mi")
+		(Name "bin-mi")))
 
 ; ---------------------------------------------------------------

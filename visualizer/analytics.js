@@ -54,11 +54,11 @@ function makeLoadAnalytics(port) {
 // Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
-// Run full MI computation (pair-counter + compute-all-stats + compute-mi)
-const RUN_MI = '(Trigger (Name "run-mi"))';
+// Run full MI computation and bin histogram (pair-counter + compute-all-stats + compute-mi + bin-mi)
+const RUN_MI_HISTOGRAM = '(Trigger (Name "run-mi-histogram"))';
 
-// Get all MI values for histogram
-const GET_MI_VALUES = '(Trigger (Name "get-mi-values"))';
+// Get binned MI histogram data
+const GET_MI_HISTOGRAM = '(Trigger (Name "get-mi-histogram"))';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -348,25 +348,25 @@ function handleAnalyticsResponse(data) {
         }
 
         if (currentCommand === 'mi-setup') {
-            // Step 2: Run full MI computation pipeline
-            console.log('MI setup complete, running MI computation');
-            showLoading(true, 'Computing MI (counting, stats, MI)...');
+            // Step 2: Run full MI computation and binning pipeline
+            console.log('MI setup complete, running MI computation and binning');
+            showLoading(true, 'Computing MI and binning...');
             analyticsPendingCommand = 'mi-compute';
-            analyticsWs.send(executeAtomese(RUN_MI));
+            analyticsWs.send(executeAtomese(RUN_MI_HISTOGRAM));
             return;
         } else if (currentCommand === 'mi-compute') {
-            // Step 3: Get MI values for histogram
-            console.log('MI computation complete, fetching MI values for histogram');
-            showLoading(true, 'Fetching MI values...');
-            analyticsPendingCommand = 'mi-get-values';
-            analyticsWs.send(executeAtomese(GET_MI_VALUES));
+            // Step 3: Get binned histogram data
+            console.log('MI computation complete, fetching histogram');
+            showLoading(true, 'Fetching histogram...');
+            analyticsPendingCommand = 'mi-get-histogram';
+            analyticsWs.send(executeAtomese(GET_MI_HISTOGRAM));
             return;
-        } else if (currentCommand === 'mi-get-values') {
+        } else if (currentCommand === 'mi-get-histogram') {
             // Step 4: Display the histogram
-            console.log('MI values received, result:', contentText);
+            console.log('Histogram received, result:', contentText);
             try {
-                const miValues = JSON.parse(contentText);
-                displayMIHistogram(miValues);
+                const histData = JSON.parse(contentText);
+                displayMIHistogram(histData);
             } catch (e) {
                 displayMIHistogram(contentText);
             }
@@ -398,20 +398,20 @@ function handleAnalyticsResponse(data) {
         }
 
         if (currentCommand === 'mi-setup') {
-            // Step 2: Run full MI computation pipeline
-            console.log('MI setup complete (alt format), running MI computation');
-            showLoading(true, 'Computing MI (counting, stats, MI)...');
+            // Step 2: Run full MI computation and binning pipeline
+            console.log('MI setup complete (alt format), running MI computation and binning');
+            showLoading(true, 'Computing MI and binning...');
             analyticsPendingCommand = 'mi-compute';
-            analyticsWs.send(executeAtomese(RUN_MI));
+            analyticsWs.send(executeAtomese(RUN_MI_HISTOGRAM));
         } else if (currentCommand === 'mi-compute') {
-            // Step 3: Get MI values for histogram
-            console.log('MI computation complete (alt format), fetching MI values');
-            showLoading(true, 'Fetching MI values...');
-            analyticsPendingCommand = 'mi-get-values';
-            analyticsWs.send(executeAtomese(GET_MI_VALUES));
-        } else if (currentCommand === 'mi-get-values') {
+            // Step 3: Get binned histogram data
+            console.log('MI computation complete (alt format), fetching histogram');
+            showLoading(true, 'Fetching histogram...');
+            analyticsPendingCommand = 'mi-get-histogram';
+            analyticsWs.send(executeAtomese(GET_MI_HISTOGRAM));
+        } else if (currentCommand === 'mi-get-histogram') {
             // Step 4: Display the histogram
-            console.log('MI values received (alt format), result:', response);
+            console.log('Histogram received (alt format), result:', response);
             displayMIHistogram(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
@@ -585,62 +585,66 @@ function displayMIHistogram(result) {
 
     barChart.innerHTML = '';
 
-    // Extract MI values from LinkValue of FloatValues
-    // Format: { "type": "LinkValue", "value": [ { "type": "FloatValue", "value": [mi] }, ... ] }
-    let miValues = [];
+    // Histogram parameters (must match scheme code)
+    const binWidth = 0.05;
+    const numTotalBins = 1600;
+    const binOffset = 800;  // bin 800 = MI of 0
+
+    // Parse binned histogram data from server
+    // Format: { "type": "LinkValue", "value": [
+    //   { "type": "LinkValue", "value": [
+    //     { "type": "NumberNode", "name": "805" },
+    //     { "type": "FloatValue", "value": [count] }
+    //   ]}, ...
+    // ]}
+    const bins = new Array(numTotalBins).fill(0);
+    let totalCount = 0;
+    let minBin = numTotalBins, maxBin = 0;
 
     if (result && result.type === 'LinkValue' && Array.isArray(result.value)) {
-        for (const item of result.value) {
-            if (item && item.type === 'FloatValue' && Array.isArray(item.value)) {
-                miValues.push(item.value[0]);
+        for (const row of result.value) {
+            if (row && row.type === 'LinkValue' && Array.isArray(row.value) && row.value.length >= 2) {
+                const binEntry = row.value[0];
+                const countEntry = row.value[1];
+
+                let binIndex = -1;
+                if (binEntry && binEntry.type === 'NumberNode' && binEntry.name) {
+                    binIndex = parseInt(binEntry.name);
+                }
+
+                let count = 0;
+                if (countEntry && countEntry.type === 'FloatValue' && Array.isArray(countEntry.value)) {
+                    count = countEntry.value[0] || 0;
+                }
+
+                if (binIndex >= 0 && binIndex < numTotalBins && count > 0) {
+                    bins[binIndex] = count;
+                    totalCount += count;
+                    minBin = Math.min(minBin, binIndex);
+                    maxBin = Math.max(maxBin, binIndex);
+                }
             }
         }
     }
 
-    if (miValues.length === 0) {
-        barChart.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No MI values found</div>';
+    if (totalCount === 0) {
+        barChart.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No histogram data found</div>';
         chartContainer.classList.remove('hidden');
         summaryPanel.classList.add('hidden');
         return;
     }
 
-    // Bin the MI values: 1600 bins of width 0.05, range [-40, +40)
-    // bin = floor(MI / 0.05) + 800 = floor(MI * 20) + 800
-    const binWidth = 0.05;
-    const numTotalBins = 1600;
-    const binOffset = 800;  // Offset so bin 0 corresponds to MI = -40
-    const bins = new Array(numTotalBins).fill(0);
-    let minMI = Infinity, maxMI = -Infinity;
-
-    for (const mi of miValues) {
-        if (isNaN(mi)) continue;
-        minMI = Math.min(minMI, mi);
-        maxMI = Math.max(maxMI, mi);
-
-        const bin = Math.floor(mi / binWidth) + binOffset;
-        if (bin >= 0 && bin < numTotalBins) {
-            bins[bin]++;
-        }
-    }
-
     // Normalize to probability density: p(x) = count / (total * binWidth)
     // This ensures integral of p(x)dx = 1
-    const totalCount = miValues.length;
     const density = bins.map(count => count / (totalCount * binWidth));
 
-    // Find non-zero bin range for display
-    let firstNonZero = density.findIndex(d => d > 0);
-    let lastNonZero = density.length - 1 - [...density].reverse().findIndex(d => d > 0);
+    // Compute MI range from bin indices
+    const minMI = (minBin - binOffset) * binWidth;
+    const maxMI = (maxBin - binOffset) * binWidth;
 
-    if (firstNonZero === -1) {
-        barChart.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No data in histogram range</div>';
-        chartContainer.classList.remove('hidden');
-        return;
-    }
-
-    // Add padding around the range
-    firstNonZero = Math.max(0, firstNonZero - 10);
-    lastNonZero = Math.min(numTotalBins - 1, lastNonZero + 10);
+    // Use the bin range from the data, with padding
+    let firstNonZero = Math.max(0, minBin - 10);
+    let lastNonZero = Math.min(numTotalBins - 1, maxBin + 10);
 
     const maxDensity = Math.max(...density.slice(firstNonZero, lastNonZero + 1));
     const numBins = lastNonZero - firstNonZero + 1;
@@ -811,7 +815,7 @@ function displayMIHistogram(result) {
 
     barChart.appendChild(svg);
 
-    summaryText.textContent = `MI Distribution: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}] (normalized, semi-log)`;
+    summaryText.textContent = `MI Distribution: ${totalCount.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}] (normalized, semi-log)`;
 
     chartContainer.classList.remove('hidden');
     summaryPanel.classList.remove('hidden');
