@@ -61,7 +61,7 @@
 	(DefinedProcedure "compute-stats")
 	(Lambda (Variable "$atom")
 		(SetValue (Variable "$atom") (Any "stats")
-			(Accumulate
+			(LinkSignature (Type 'FloatValue)
 				(FloatValueOf (Variable "$atom") (Any "count"))
 				(Divide
 					(FloatValueOf (Variable "$atom") (Any "count"))
