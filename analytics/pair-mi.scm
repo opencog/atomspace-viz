@@ -46,3 +46,71 @@
 	(ValueOf (List (Any "left wildcard") (Any "right wildcard")) (Any "count")))
 
 ; ---------------------------------------------------------------
+; Probability and entropy computation.
+; For each counted atom, compute:
+;   p = count / total
+;   entropy = -log2(p)
+; Store as (FloatValue count p entropy) with key (Any "stats")
+
+; Define the total atom for convenience
+(define total-atom (List (Any "left wildcard") (Any "right wildcard")))
+
+; Define procedure to compute stats for a given atom
+; Takes an atom and computes (FloatValue count prob entropy)
+(Define (DefinedProcedure "compute-stats")
+	(Lambda (Variable "$atom")
+		(SetValue (Variable "$atom") (Any "stats")
+			(Accumulate
+				(ValueOf (Variable "$atom") (Any "count"))
+				(Divide
+					(ValueOf (Variable "$atom") (Any "count"))
+					(ValueOf total-atom (Any "count")))
+				(Minus (Number 0)
+					(Log2
+						(Divide
+							(ValueOf (Variable "$atom") (Any "count"))
+							(ValueOf total-atom (Any "count")))))))))
+
+; Pipeline to compute stats for all pairs
+; Uses the cached Meet result to iterate over pairs
+(PipeLink (Name "compute-pair-stats")
+	(True
+		(Filter
+			(Rule (VariableList (Variable "left") (Variable "right"))
+				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+				(ExecutionOutput (DefinedProcedure "compute-stats")
+					(List (Variable "left") (Variable "right"))))
+			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; Pipeline to compute stats for left marginals
+; Query: find all (List X (Any "right wildcard")) atoms
+(PipeLink (Name "compute-left-stats")
+	(True
+		(Filter
+			(Rule (Variable "$X")
+				(LinkSignature (Type 'ListLink) (Variable "$X") (Any "right wildcard"))
+				(ExecutionOutput (DefinedProcedure "compute-stats")
+					(List (Variable "$X") (Any "right wildcard"))))
+			(Meet (Variable "$X")
+				(Present (List (Variable "$X") (Any "right wildcard")))))))
+
+; Pipeline to compute stats for right marginals
+; Query: find all (List (Any "left wildcard") Y) atoms
+(PipeLink (Name "compute-right-stats")
+	(True
+		(Filter
+			(Rule (Variable "$Y")
+				(LinkSignature (Type 'ListLink) (Any "left wildcard") (Variable "$Y"))
+				(ExecutionOutput (DefinedProcedure "compute-stats")
+					(List (Any "left wildcard") (Variable "$Y"))))
+			(Meet (Variable "$Y")
+				(Present (List (Any "left wildcard") (Variable "$Y")))))))
+
+; Master pipeline: compute all stats
+(PipeLink (Name "compute-all-stats")
+	(True
+		(Name "compute-pair-stats")
+		(Name "compute-left-stats")
+		(Name "compute-right-stats")))
+
+; ---------------------------------------------------------------
