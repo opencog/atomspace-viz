@@ -7,83 +7,71 @@
 ;
 ; The pipeline is triggered by executing (Name "pair-counter").
 ;
-; The count is stored on a temporary anchor (to be improved later).
+; The web UI sets up four items on the analytics anchor:
+;   - "pair generator": DontExec(Meet) for generating pairs
+;   - "pair premise": Lambda for pair counts
+;   - "left marginal": Lambda that when Put with left value gives left's marginal Lambda
+;   - "right marginal": Lambda that when Put with right value gives right's marginal Lambda
+;
+; All counts are stored on LambdaLinks (not MeetLinks) to avoid accidental execution.
 ;
 (use-modules (opencog))
 
 ; ---------------------------------------------------------------
 ; The pair-counting pipeline.
 ;
-; This pipeline:
-; - Gets the Meet pattern from the analytics anchor
-; - Executes it to generate pairs
-; - For each pair, increments a counter on a temp anchor
-; - Returns the final count
-;
-; The Meet should have been set up with:
-;   (SetValue (Anchor "analytics") (Predicate "pair generator")
-;       (DontExec (Meet ...)))
-;
 ; Stage 1: Count all pairs and build marginal/pair counts
 ; For each pair (left-val, right-val), we increment:
-;   1. Total count on the generator pattern
-;   2. Left marginal: Meet with left fixed, right variable
-;   3. Right marginal: Meet with right fixed, left variable
-;   4. Pair count: the specific edge with both fixed
+;   1. Total count on the pair premise Lambda
+;   2. Left marginal: Lambda for this left item (via Put on left marginal)
+;   3. Right marginal: Lambda for this right item (via Put on right marginal)
+;   4. Pair count: Lambda for this specific pair (via Put on pair premise)
 ;
-; We use $L and $R as variable names for the marginal Meets to avoid
-; capture by the Rule's variable substitution.
 (PipeLink
 	(Name "pair-counter")
 	(PureExec
 		; Count all pairs and build marginal/pair counts
-		; The Lambda premise is stored by the web UI alongside the Meet pattern
 		(True
 			(Filter
 				(Rule
 					(VariableList (Variable "left") (Variable "right"))
 					(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
 					; All increments - return value ignored by True
-					; DontExec prevents execution of the atoms we're incrementing on
 					(LinkValue
-						; 1. Total count on the generator (LiteralValueOf returns DontExec(Meet))
+						; 1. Total count on the pair premise Lambda
 						(IncrementValue
-							(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
+							(ValueOf (Anchor "analytics") (Predicate "pair premise"))
 							(Predicate "total")
 							(Number 1))
 						; 2. Left marginal - count for this left item across all right items
+						;    Put left value into left marginal Lambda to get the specific Lambda
 						(IncrementValue
-							(DontExec
-								(Meet
-									(Variable "$R")
-									(Put
-										(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-										(List (Variable "left") (Variable "$R")))))
+							(Put
+								(ValueOf (Anchor "analytics") (Predicate "left marginal"))
+								(Variable "left"))
 							(Predicate "count")
 							(Number 1))
 						; 3. Right marginal - count for this right item across all left items
+						;    Put right value into right marginal Lambda to get the specific Lambda
 						(IncrementValue
-							(DontExec
-								(Meet
-									(Variable "$L")
-									(Put
-										(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-										(List (Variable "$L") (Variable "right")))))
+							(Put
+								(ValueOf (Anchor "analytics") (Predicate "right marginal"))
+								(Variable "right"))
 							(Predicate "count")
 							(Number 1))
 						; 4. Pair count - count for this specific pair
+						;    Put (left, right) into pair premise to get the specific edge Lambda
 						(IncrementValue
-							(DontExec
-								(Put
-									(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-									(List (Variable "left") (Variable "right"))))
+							(Put
+								(ValueOf (Anchor "analytics") (Predicate "pair premise"))
+								(List (Variable "left") (Variable "right")))
 							(Predicate "count")
 							(Number 1))))
 				; Input: pairs from the Meet stored on the anchor
 				(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
-		; Fetch and return the total count
+		; Fetch and return the total count from the pair premise Lambda
 		(ValueOf
-			(DontExec (LiteralValueOf (Anchor "analytics") (Predicate "pair generator")))
+			(ValueOf (Anchor "analytics") (Predicate "pair premise"))
 			(Predicate "total"))))
 
 ; Stage 2: Extract the FloatValue count from the pair-counter result

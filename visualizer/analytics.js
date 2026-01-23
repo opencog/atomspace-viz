@@ -629,15 +629,28 @@ function buildMIPattern() {
 
     const pattern = `(Edge ${relationPart}\n    (List ${leftPart} ${rightPart}))`;
     const meet = `(Meet (VariableList (Variable "left") (Variable "right")) ${pattern})`;
-    // Also create the Lambda premise for use in Put substitutions
-    const lambda = `(Lambda (VariableList (Variable "left") (Variable "right")) ${pattern})`;
-    // Store both the Meet and Lambda on the analytics anchor for the counting pipeline
-    // Single DontExec prevents execution during storage
+
+    // Create the main Lambda premise for pair counts
+    const pairLambda = `(Lambda (VariableList (Variable "left") (Variable "right")) ${pattern})`;
+
+    // Create left marginal Lambda: when Put with a left value, gives Lambda for that left's marginal
+    // Pattern with left as variable, right replaced by $R
+    const leftMarginalPattern = `(Edge ${relationPart}\n    (List (Variable "left") (Variable "$R")))`;
+    const leftMarginal = `(Lambda (Variable "left") (Lambda (Variable "$R") ${leftMarginalPattern}))`;
+
+    // Create right marginal Lambda: when Put with a right value, gives Lambda for that right's marginal
+    // Pattern with right as variable, left replaced by $L
+    const rightMarginalPattern = `(Edge ${relationPart}\n    (List (Variable "$L") (Variable "right")))`;
+    const rightMarginal = `(Lambda (Variable "right") (Lambda (Variable "$L") ${rightMarginalPattern}))`;
+
+    // Store the Meet and all three Lambdas on the analytics anchor
     const setup = `(LinkValue
         (SetValue (Anchor "analytics") (Predicate "pair generator") (DontExec ${meet}))
-        (SetValue (Anchor "analytics") (Predicate "pair premise") ${lambda}))`;
+        (SetValue (Anchor "analytics") (Predicate "pair premise") ${pairLambda})
+        (SetValue (Anchor "analytics") (Predicate "left marginal") ${leftMarginal})
+        (SetValue (Anchor "analytics") (Predicate "right marginal") ${rightMarginal}))`;
 
-    return { pattern, meet, lambda, setup };
+    return { pattern, meet, pairLambda, leftMarginal, rightMarginal, setup };
 }
 
 function setupMISelector() {
