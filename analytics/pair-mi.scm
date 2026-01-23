@@ -7,77 +7,64 @@
 ;
 ; The pipeline is triggered by executing (Name "pair-counter").
 ;
-; The web UI sets up four items on the analytics anchor:
+; The web UI sets up:
 ;   - "pair generator": DontExec(Meet) for generating pairs
-;   - "pair premise": Lambda for pair counts
-;   - "left marginal": Lambda that when Put with left value gives left's marginal Lambda
-;   - "right marginal": Lambda that when Put with right value gives right's marginal Lambda
 ;
-; All counts are stored on LambdaLinks (not MeetLinks) to avoid accidental execution.
+; Counts are stored on the Anchor "analytics" with compound keys:
+;   - (Predicate "total"): total pair count
+;   - (List (Predicate "left") <item>): left marginal count
+;   - (List (Predicate "right") <item>): right marginal count
+;   - (List (Predicate "pair") <left> <right>): pair count
 ;
 (use-modules (opencog))
 
 ; ---------------------------------------------------------------
-; The pair-counting pipeline.
-;
-; Stage 1: Count all pairs and build marginal/pair counts
-; For each pair (left-val, right-val), we increment:
-;   1. Total count on the pair premise Lambda
-;   2. Left marginal: Lambda for this left item (via Put on left marginal)
-;   3. Right marginal: Lambda for this right item (via Put on right marginal)
-;   4. Pair count: Lambda for this specific pair (via Put on pair premise)
-;
-; Note: We don't use PureExec because we want counts to persist in main atomspace.
-;
-(PipeLink
-	(Name "pair-counter")
-	; Count all pairs and build marginal/pair counts
-	; Returns BoolValue(true) when complete
-	(True
-		(Filter
-			(Rule
-				(VariableList (Variable "left") (Variable "right"))
-				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-				; All increments - return value ignored by True
-				(LinkValue
-					; 1. Total count on the pair premise Lambda
-					(IncrementValue
-						(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-						(Predicate "total")
-						(Number 1))
-					; 2. Left marginal - count for this left item across all right items
-					;    Put left value into left marginal Lambda to get the specific Lambda
-					(IncrementValue
-						(Put
-							(ValueOf (Anchor "analytics") (Predicate "left marginal"))
-							(Variable "left"))
-						(Predicate "count")
-						(Number 1))
-					; 3. Right marginal - count for this right item across all left items
-					;    Put right value into right marginal Lambda to get the specific Lambda
-					(IncrementValue
-						(Put
-							(ValueOf (Anchor "analytics") (Predicate "right marginal"))
-							(Variable "right"))
-						(Predicate "count")
-						(Number 1))
-					; 4. Pair count - count for this specific pair
-					;    Put (left, right) into pair premise to get the specific edge Lambda
-					(IncrementValue
-						(Put
-							(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-							(List (Variable "left") (Variable "right")))
-						(Predicate "count")
-						(Number 1))))
-			; Input: pairs from the Meet stored on the anchor
-			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+; Individual counting pipelines - each Filter handles one count type.
+; (LinkValue is a Value and can't be stored, so we use separate Filters)
 
-; Stage 2: Fetch the total count from pair premise Lambda
-; Call this AFTER pair-counter has been triggered
-(PipeLink
-	(Name "get total count")
-	(ValueOf
-		(ValueOf (Anchor "analytics") (Predicate "pair premise"))
-		(Predicate "total")))
+; Count total pairs
+(PipeLink (Name "count-total")
+	(True (Filter
+		(Rule (VariableList (Variable "left") (Variable "right"))
+			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+			(IncrementValue (Anchor "analytics") (Predicate "total") (Number 1)))
+		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; Count left marginals
+(PipeLink (Name "count-left")
+	(True (Filter
+		(Rule (VariableList (Variable "left") (Variable "right"))
+			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+			(IncrementValue (Anchor "analytics") (List (Predicate "left") (Variable "left")) (Number 1)))
+		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; Count right marginals
+(PipeLink (Name "count-right")
+	(True (Filter
+		(Rule (VariableList (Variable "left") (Variable "right"))
+			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+			(IncrementValue (Anchor "analytics") (List (Predicate "right") (Variable "right")) (Number 1)))
+		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; Count pairs
+(PipeLink (Name "count-pairs")
+	(True (Filter
+		(Rule (VariableList (Variable "left") (Variable "right"))
+			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+			(IncrementValue (Anchor "analytics") (List (Predicate "pair") (Variable "left") (Variable "right")) (Number 1)))
+		(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; ---------------------------------------------------------------
+; Master pipeline: run all 4 counting pipelines
+(PipeLink (Name "pair-counter")
+	(True
+		(Name "count-total")
+		(Name "count-left")
+		(Name "count-right")
+		(Name "count-pairs")))
+
+; Fetch the total count
+(PipeLink (Name "get total count")
+	(ValueOf (Anchor "analytics") (Predicate "total")))
 
 ; ---------------------------------------------------------------

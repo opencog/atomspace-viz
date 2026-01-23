@@ -630,27 +630,10 @@ function buildMIPattern() {
     const pattern = `(Edge ${relationPart}\n    (List ${leftPart} ${rightPart}))`;
     const meet = `(Meet (VariableList (Variable "left") (Variable "right")) ${pattern})`;
 
-    // Create the main Lambda premise for pair counts
-    const pairLambda = `(Lambda (VariableList (Variable "left") (Variable "right")) ${pattern})`;
+    // Store just the Meet pattern - counts are stored on Anchor with compound keys
+    const setup = `(SetValue (Anchor "analytics") (Predicate "pair generator") (DontExec ${meet}))`;
 
-    // Create left marginal Lambda: when Put with a left value, gives Lambda for that left's marginal
-    // Pattern with left as variable, right replaced by $R
-    const leftMarginalPattern = `(Edge ${relationPart}\n    (List (Variable "left") (Variable "$R")))`;
-    const leftMarginal = `(Lambda (Variable "left") (Lambda (Variable "$R") ${leftMarginalPattern}))`;
-
-    // Create right marginal Lambda: when Put with a right value, gives Lambda for that right's marginal
-    // Pattern with right as variable, left replaced by $L
-    const rightMarginalPattern = `(Edge ${relationPart}\n    (List (Variable "$L") (Variable "right")))`;
-    const rightMarginal = `(Lambda (Variable "right") (Lambda (Variable "$L") ${rightMarginalPattern}))`;
-
-    // Store the Meet and all three Lambdas on the analytics anchor
-    const setup = `(LinkValue
-        (SetValue (Anchor "analytics") (Predicate "pair generator") (DontExec ${meet}))
-        (SetValue (Anchor "analytics") (Predicate "pair premise") ${pairLambda})
-        (SetValue (Anchor "analytics") (Predicate "left marginal") ${leftMarginal})
-        (SetValue (Anchor "analytics") (Predicate "right marginal") ${rightMarginal}))`;
-
-    return { pattern, meet, pairLambda, leftMarginal, rightMarginal, setup };
+    return { pattern, meet, setup };
 }
 
 function setupMISelector() {
