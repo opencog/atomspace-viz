@@ -54,11 +54,8 @@ function makeLoadAnalytics(port) {
 // Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
-// Trigger the pair-counter pipeline
+// Trigger the pair-counter pipeline (returns the count directly)
 const TRIGGER_PAIR_COUNTER = '(Trigger (Name "pair-counter"))';
-
-// Fetch the pair count from the Meet pattern
-const GET_PAIR_COUNT = '(Trigger (ValueOf (DontExec (LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))) (Predicate "total")))';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -355,15 +352,8 @@ function handleAnalyticsResponse(data) {
             analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
             return;
         } else if (currentCommand === 'mi-counting') {
-            // Step 3: Fetch the count
-            console.log('Pair counting complete, fetching count');
-            showLoading(true, 'Fetching count...');
-            analyticsPendingCommand = 'mi-fetch-count';
-            analyticsWs.send(executeAtomese(GET_PAIR_COUNT));
-            return;
-        } else if (currentCommand === 'mi-fetch-count') {
-            // Step 4: Display the result
-            console.log('Got pair count result:', contentText);
+            // Step 3: Display the result (count is returned directly from pair-counter)
+            console.log('Pair counting complete, result:', contentText);
             try {
                 const countResult = JSON.parse(contentText);
                 displayMIResult(countResult);
@@ -404,14 +394,8 @@ function handleAnalyticsResponse(data) {
             analyticsPendingCommand = 'mi-counting';
             analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
         } else if (currentCommand === 'mi-counting') {
-            // Step 3: Fetch the count
-            console.log('Pair counting complete (alt format), fetching count');
-            showLoading(true, 'Fetching count...');
-            analyticsPendingCommand = 'mi-fetch-count';
-            analyticsWs.send(executeAtomese(GET_PAIR_COUNT));
-        } else if (currentCommand === 'mi-fetch-count') {
-            // Step 4: Display the result
-            console.log('Got pair count result (alt format):', response);
+            // Step 3: Display the result (count is returned directly from pair-counter)
+            console.log('Pair counting complete (alt format), result:', response);
             displayMIResult(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;

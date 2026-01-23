@@ -26,16 +26,23 @@
 ;
 (PipeLink
 	(Name "pair-counter")
-	(Filter
-		(Rule
-			(VariableList (Variable "left") (Variable "right"))
-			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-			; Increment the count on the pattern
-			(IncrementValue
-				(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
-				(Predicate "total")
-				(Number 1)))
-		; Input: pairs from the Meet stored on the anchor
-		(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
+	(PureExec
+		; First: count all pairs, suppress output with True
+		(True
+			(Filter
+				(Rule
+					(VariableList (Variable "left") (Variable "right"))
+					(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+					; Increment the count on the pattern
+					(IncrementValue
+						(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
+						(Predicate "total")
+						(Number 1)))
+				; Input: pairs from the Meet stored on the anchor
+				(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
+		; Second: fetch and return the total count (still in scratch space)
+		(ValueOf
+			(DontExec (LiteralValueOf (Anchor "analytics") (Predicate "pair generator")))
+			(Predicate "total"))))
 
 ; ---------------------------------------------------------------
