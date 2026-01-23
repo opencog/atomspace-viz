@@ -209,3 +209,12 @@
 		(Name "bin-mi")))
 
 ; ---------------------------------------------------------------
+; Master pipeline: run MI in anonymous scratch space and return histogram.
+; The PureExec creates an anonymous child AtomSpace that is automatically
+; destroyed after use, ensuring fresh counts on each run.
+(PipeLink (Name "run-mi-fresh")
+	(PureExec
+		(True (Name "run-mi-histogram"))
+		(Name "get-mi-histogram")))
+
+; ---------------------------------------------------------------

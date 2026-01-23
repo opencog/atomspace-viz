@@ -61,11 +61,9 @@ function makeLoadAnalytics(port) {
 // Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
-// Run full MI computation and bin histogram (pair-counter + compute-all-stats + compute-mi + bin-mi)
-const RUN_MI_HISTOGRAM = '(Trigger (Name "run-mi-histogram"))';
-
-// Get binned MI histogram data
-const GET_MI_HISTOGRAM = '(Trigger (Name "get-mi-histogram"))';
+// Run MI computation in fresh scratch space and return histogram
+// Uses PureExec with anonymous AtomSpace so counts don't accumulate across runs
+const RUN_MI_FRESH = '(Trigger (Name "run-mi-fresh"))';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -374,22 +372,15 @@ function handleAnalyticsResponse(data) {
         }
 
         if (currentCommand === 'mi-setup') {
-            // Step 2: Run full MI computation and binning pipeline
-            console.log('MI setup complete, running MI computation and binning');
-            showLoading(true, 'Computing MI and binning...');
-            analyticsPendingCommand = 'mi-compute';
-            analyticsWs.send(executeAtomese(RUN_MI_HISTOGRAM));
+            // Step 2: Run MI in fresh scratch space (returns histogram directly)
+            console.log('MI setup complete, running MI computation in scratch space');
+            showLoading(true, 'Computing MI in scratch space...');
+            analyticsPendingCommand = 'mi-fresh';
+            analyticsWs.send(executeAtomese(RUN_MI_FRESH));
             return;
-        } else if (currentCommand === 'mi-compute') {
-            // Step 3: Get binned histogram data
-            console.log('MI computation complete, fetching histogram');
-            showLoading(true, 'Fetching histogram...');
-            analyticsPendingCommand = 'mi-get-histogram';
-            analyticsWs.send(executeAtomese(GET_MI_HISTOGRAM));
-            return;
-        } else if (currentCommand === 'mi-get-histogram') {
-            // Step 4: Display the histogram
-            console.log('Histogram received, result:', contentText);
+        } else if (currentCommand === 'mi-fresh') {
+            // Step 3: Display the histogram (returned directly from run-mi-fresh)
+            console.log('MI histogram received:', contentText);
             try {
                 const histData = JSON.parse(contentText);
                 displayMIHistogram(histData);
@@ -424,20 +415,14 @@ function handleAnalyticsResponse(data) {
         }
 
         if (currentCommand === 'mi-setup') {
-            // Step 2: Run full MI computation and binning pipeline
-            console.log('MI setup complete (alt format), running MI computation and binning');
-            showLoading(true, 'Computing MI and binning...');
-            analyticsPendingCommand = 'mi-compute';
-            analyticsWs.send(executeAtomese(RUN_MI_HISTOGRAM));
-        } else if (currentCommand === 'mi-compute') {
-            // Step 3: Get binned histogram data
-            console.log('MI computation complete (alt format), fetching histogram');
-            showLoading(true, 'Fetching histogram...');
-            analyticsPendingCommand = 'mi-get-histogram';
-            analyticsWs.send(executeAtomese(GET_MI_HISTOGRAM));
-        } else if (currentCommand === 'mi-get-histogram') {
-            // Step 4: Display the histogram
-            console.log('Histogram received (alt format), result:', response);
+            // Step 2: Run MI in fresh scratch space (returns histogram directly)
+            console.log('MI setup complete (alt format), running MI in scratch space');
+            showLoading(true, 'Computing MI in scratch space...');
+            analyticsPendingCommand = 'mi-fresh';
+            analyticsWs.send(executeAtomese(RUN_MI_FRESH));
+        } else if (currentCommand === 'mi-fresh') {
+            // Step 3: Display the histogram (returned directly from run-mi-fresh)
+            console.log('MI histogram received (alt format):', response);
             displayMIHistogram(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
