@@ -24,6 +24,7 @@
 ;   (SetValue (Anchor "analytics") (Predicate "pair generator")
 ;       (DontExec (Meet ...)))
 ;
+; Stage 1: Count all pairs, return results in a LinkValue
 (PipeLink
 	(Name "pair-counter")
 	(PureExec
@@ -44,5 +45,15 @@
 		(ValueOf
 			(DontExec (LiteralValueOf (Anchor "analytics") (Predicate "pair generator")))
 			(Predicate "total"))))
+
+; Stage 2: Extract the FloatValue count from the pair-counter result
+(PipeLink
+	(Name "get total count")
+	(Filter
+		(Rule
+			(TypedVariable (Variable "$count") (Type 'FloatValue))
+			(Variable "$count")
+			(Variable "$count"))
+		(Name "pair-counter")))
 
 ; ---------------------------------------------------------------

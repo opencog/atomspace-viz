@@ -54,8 +54,8 @@ function makeLoadAnalytics(port) {
 // Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
-// Trigger the pair-counter pipeline (returns the count directly)
-const TRIGGER_PAIR_COUNTER = '(Trigger (Name "pair-counter"))';
+// Trigger the pair-counting pipeline and extract the total count
+const TRIGGER_PAIR_COUNTER = '(Trigger (Name "get total count"))';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
