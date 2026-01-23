@@ -57,6 +57,9 @@ const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 // Run full MI computation (pair-counter + compute-all-stats + compute-mi)
 const RUN_MI = '(Trigger (Name "run-mi"))';
 
+// Get all MI values for histogram
+const GET_MI_VALUES = '(Trigger (Name "get-mi-values"))';
+
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     connect();
@@ -352,13 +355,20 @@ function handleAnalyticsResponse(data) {
             analyticsWs.send(executeAtomese(RUN_MI));
             return;
         } else if (currentCommand === 'mi-compute') {
-            // Step 3: Display the result
-            console.log('MI computation complete, result:', contentText);
+            // Step 3: Get MI values for histogram
+            console.log('MI computation complete, fetching MI values for histogram');
+            showLoading(true, 'Fetching MI values...');
+            analyticsPendingCommand = 'mi-get-values';
+            analyticsWs.send(executeAtomese(GET_MI_VALUES));
+            return;
+        } else if (currentCommand === 'mi-get-values') {
+            // Step 4: Display the histogram
+            console.log('MI values received, result:', contentText);
             try {
-                const miResult = JSON.parse(contentText);
-                displayMIResult(miResult);
+                const miValues = JSON.parse(contentText);
+                displayMIHistogram(miValues);
             } catch (e) {
-                displayMIResult(contentText);
+                displayMIHistogram(contentText);
             }
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
@@ -394,9 +404,15 @@ function handleAnalyticsResponse(data) {
             analyticsPendingCommand = 'mi-compute';
             analyticsWs.send(executeAtomese(RUN_MI));
         } else if (currentCommand === 'mi-compute') {
-            // Step 3: Display the result
-            console.log('MI computation complete (alt format), result:', response);
-            displayMIResult(response);
+            // Step 3: Get MI values for histogram
+            console.log('MI computation complete (alt format), fetching MI values');
+            showLoading(true, 'Fetching MI values...');
+            analyticsPendingCommand = 'mi-get-values';
+            analyticsWs.send(executeAtomese(GET_MI_VALUES));
+        } else if (currentCommand === 'mi-get-values') {
+            // Step 4: Display the histogram
+            console.log('MI values received (alt format), result:', response);
+            displayMIHistogram(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
         } else {
@@ -552,6 +568,109 @@ function displayMIResult(result) {
     count = Math.round(count);
     countEl.textContent = count.toLocaleString() + ' pairs found';
     resultEl.classList.remove('hidden');
+}
+
+function displayMIHistogram(result) {
+    console.log('MI histogram data:', result);
+
+    const chartContainer = document.getElementById('chart-container');
+    const barChart = document.getElementById('bar-chart');
+    const summaryPanel = document.getElementById('results-summary');
+    const summaryText = document.getElementById('summary-text');
+
+    if (!barChart) {
+        console.error('Bar chart element not found');
+        return;
+    }
+
+    barChart.innerHTML = '';
+
+    // Extract MI values from LinkValue of FloatValues
+    // Format: { "type": "LinkValue", "value": [ { "type": "FloatValue", "value": [mi] }, ... ] }
+    let miValues = [];
+
+    if (result && result.type === 'LinkValue' && Array.isArray(result.value)) {
+        for (const item of result.value) {
+            if (item && item.type === 'FloatValue' && Array.isArray(item.value)) {
+                miValues.push(item.value[0]);
+            }
+        }
+    }
+
+    if (miValues.length === 0) {
+        barChart.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No MI values found</div>';
+        chartContainer.classList.remove('hidden');
+        summaryPanel.classList.add('hidden');
+        return;
+    }
+
+    // Bin the MI values: 200 bins of width 0.1, range [-10, +10)
+    // bin = floor(MI * 10) + 100
+    const bins = new Array(200).fill(0);
+    let minMI = Infinity, maxMI = -Infinity;
+
+    for (const mi of miValues) {
+        if (isNaN(mi)) continue;
+        minMI = Math.min(minMI, mi);
+        maxMI = Math.max(maxMI, mi);
+
+        const bin = Math.floor(mi * 10) + 100;
+        if (bin >= 0 && bin < 200) {
+            bins[bin]++;
+        }
+    }
+
+    // Find non-zero bin range for display
+    let firstNonZero = bins.findIndex(b => b > 0);
+    let lastNonZero = bins.length - 1 - [...bins].reverse().findIndex(b => b > 0);
+
+    if (firstNonZero === -1) {
+        barChart.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No data in histogram range</div>';
+        chartContainer.classList.remove('hidden');
+        return;
+    }
+
+    // Add some padding around the range
+    firstNonZero = Math.max(0, firstNonZero - 5);
+    lastNonZero = Math.min(199, lastNonZero + 5);
+
+    const maxCount = Math.max(...bins);
+
+    // Render histogram bars
+    for (let i = firstNonZero; i <= lastNonZero; i++) {
+        const miLow = (i - 100) / 10;
+        const count = bins[i];
+
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.textContent = miLow.toFixed(1);
+        label.title = `MI: [${miLow.toFixed(1)}, ${(miLow + 0.1).toFixed(1)})`;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bar-wrapper';
+
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.width = `${(count / maxCount) * 100}%`;
+
+        const value = document.createElement('div');
+        value.className = 'bar-value';
+        value.textContent = count > 0 ? count.toLocaleString() : '';
+
+        wrapper.appendChild(bar);
+        row.appendChild(label);
+        row.appendChild(wrapper);
+        row.appendChild(value);
+        barChart.appendChild(row);
+    }
+
+    summaryText.textContent = `MI Histogram: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}]`;
+
+    chartContainer.classList.remove('hidden');
+    summaryPanel.classList.remove('hidden');
 }
 
 function enableControls() {

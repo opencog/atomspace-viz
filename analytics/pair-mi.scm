@@ -157,3 +157,16 @@
 		(Name "compute-mi")))
 
 ; ---------------------------------------------------------------
+; MI Histogram: collect all MI values for visualization
+; Returns a stream of MI values that JavaScript will bin
+
+; Pipeline to collect all MI values as a flat list
+; Returns LinkValue containing all MI FloatValues
+(PipeLink (Name "get-mi-values")
+	(Filter
+		(Rule (VariableList (Variable "left") (Variable "right"))
+			(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+			(FloatValueOf (List (Variable "left") (Variable "right")) (Any "mi")))
+		(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
+
+; ---------------------------------------------------------------
