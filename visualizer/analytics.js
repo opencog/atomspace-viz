@@ -58,7 +58,7 @@ const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 const TRIGGER_PAIR_COUNTER = '(Trigger (Name "pair-counter"))';
 
 // Fetch the pair count from the Meet pattern
-const GET_PAIR_COUNT = '(Trigger (ValueOf (LiteralValueOf (Anchor "analytics") (Predicate "pair generator")) (Predicate "total")))';
+const GET_PAIR_COUNT = '(Trigger (ValueOf (DontExec (LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))) (Predicate "total")))';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
