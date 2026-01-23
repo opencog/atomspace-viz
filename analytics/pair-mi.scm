@@ -36,7 +36,8 @@
 (PipeLink
 	(Name "pair-counter")
 	(PureExec
-		; Count all pairs and build counts
+		; Count all pairs and build marginal/pair counts
+		; The Lambda premise is stored by the web UI alongside the Meet pattern
 		(True
 			(Filter
 				(Rule
@@ -56,7 +57,7 @@
 								(Meet
 									(Variable "$R")
 									(Put
-										(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+										(ValueOf (Anchor "analytics") (Predicate "pair premise"))
 										(List (Variable "left") (Variable "$R")))))
 							(Predicate "count")
 							(Number 1))
@@ -66,7 +67,7 @@
 								(Meet
 									(Variable "$L")
 									(Put
-										(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+										(ValueOf (Anchor "analytics") (Predicate "pair premise"))
 										(List (Variable "$L") (Variable "right")))))
 							(Predicate "count")
 							(Number 1))
@@ -74,7 +75,7 @@
 						(IncrementValue
 							(DontExec
 								(Put
-									(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+									(ValueOf (Anchor "analytics") (Predicate "pair premise"))
 									(List (Variable "left") (Variable "right"))))
 							(Predicate "count")
 							(Number 1))))

@@ -629,11 +629,15 @@ function buildMIPattern() {
 
     const pattern = `(Edge ${relationPart}\n    (List ${leftPart} ${rightPart}))`;
     const meet = `(Meet (VariableList (Variable "left") (Variable "right")) ${pattern})`;
-    // Store the Meet on the analytics anchor for the counting pipeline to reference
+    // Also create the Lambda premise for use in Put substitutions
+    const lambda = `(Lambda (VariableList (Variable "left") (Variable "right")) ${pattern})`;
+    // Store both the Meet and Lambda on the analytics anchor for the counting pipeline
     // Single DontExec prevents execution during storage
-    const setup = `(SetValue (Anchor "analytics") (Predicate "pair generator") (DontExec ${meet}))`;
+    const setup = `(LinkValue
+        (SetValue (Anchor "analytics") (Predicate "pair generator") (DontExec ${meet}))
+        (SetValue (Anchor "analytics") (Predicate "pair premise") ${lambda}))`;
 
-    return { pattern, meet, setup };
+    return { pattern, meet, lambda, setup };
 }
 
 function setupMISelector() {
