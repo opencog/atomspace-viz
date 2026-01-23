@@ -606,6 +606,7 @@ function displayMIHistogram(result) {
 
     // Bin the MI values: 200 bins of width 0.1, range [-10, +10)
     // bin = floor(MI * 10) + 100
+    const binWidth = 0.1;
     const bins = new Array(200).fill(0);
     let minMI = Infinity, maxMI = -Infinity;
 
@@ -620,9 +621,14 @@ function displayMIHistogram(result) {
         }
     }
 
+    // Normalize to probability density: p(x) = count / (total * binWidth)
+    // This ensures integral of p(x)dx = 1
+    const totalCount = miValues.length;
+    const density = bins.map(count => count / (totalCount * binWidth));
+
     // Find non-zero bin range for display
-    let firstNonZero = bins.findIndex(b => b > 0);
-    let lastNonZero = bins.length - 1 - [...bins].reverse().findIndex(b => b > 0);
+    let firstNonZero = density.findIndex(d => d > 0);
+    let lastNonZero = density.length - 1 - [...density].reverse().findIndex(d => d > 0);
 
     if (firstNonZero === -1) {
         barChart.innerHTML = '<div style="color: var(--text-secondary); padding: 20px;">No data in histogram range</div>';
@@ -634,7 +640,7 @@ function displayMIHistogram(result) {
     firstNonZero = Math.max(0, firstNonZero - 5);
     lastNonZero = Math.min(199, lastNonZero + 5);
 
-    const maxCount = Math.max(...bins.slice(firstNonZero, lastNonZero + 1));
+    const maxDensity = Math.max(...density.slice(firstNonZero, lastNonZero + 1));
     const numBins = lastNonZero - firstNonZero + 1;
 
     // SVG dimensions
@@ -651,13 +657,16 @@ function displayMIHistogram(result) {
     svg.style.display = 'block';
     svg.style.margin = '0 auto';
 
-    // Semi-log scale: linear X, logarithmic Y
-    const logMax = Math.log10(maxCount + 1);
+    // Semi-log scale: linear X, logarithmic Y for probability density
+    // Use a small epsilon to avoid log(0)
+    const epsilon = 1e-10;
+    const logMax = Math.log10(maxDensity + epsilon);
+    const logMin = Math.log10(epsilon);
     const xScale = (bin) => margin.left + ((bin - firstNonZero) / numBins) * plotWidth;
-    const yScale = (count) => {
-        if (count <= 0) return margin.top + plotHeight;
-        const logVal = Math.log10(count + 1);
-        return margin.top + plotHeight - (logVal / logMax) * plotHeight;
+    const yScale = (d) => {
+        if (d <= 0) return margin.top + plotHeight;
+        const logVal = Math.log10(d + epsilon);
+        return margin.top + plotHeight - ((logVal - logMin) / (logMax - logMin)) * plotHeight;
     };
 
     // Draw grid lines for log scale (at powers of 10)
@@ -665,26 +674,28 @@ function displayMIHistogram(result) {
     gridGroup.setAttribute('stroke', '#333');
     gridGroup.setAttribute('stroke-width', '0.5');
 
-    // Draw grid lines at powers of 10
-    const maxPower = Math.ceil(Math.log10(maxCount + 1));
-    for (let p = 0; p <= maxPower; p++) {
-        const count = Math.pow(10, p);
-        if (count > maxCount + 1) break;
-        const y = yScale(count);
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', margin.left);
-        line.setAttribute('y1', y);
-        line.setAttribute('x2', width - margin.right);
-        line.setAttribute('y2', y);
-        gridGroup.appendChild(line);
+    // Draw grid lines at powers of 10 for probability density
+    const minPower = Math.floor(Math.log10(maxDensity * 0.001));
+    const maxPower = Math.ceil(Math.log10(maxDensity));
+    for (let p = minPower; p <= maxPower; p++) {
+        const d = Math.pow(10, p);
+        const y = yScale(d);
+        if (y >= margin.top && y <= margin.top + plotHeight) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', margin.left);
+            line.setAttribute('y1', y);
+            line.setAttribute('x2', width - margin.right);
+            line.setAttribute('y2', y);
+            gridGroup.appendChild(line);
+        }
     }
     svg.appendChild(gridGroup);
 
-    // Build path for line graph
+    // Build path for line graph using normalized density
     let pathD = '';
     for (let i = firstNonZero; i <= lastNonZero; i++) {
         const x = xScale(i);
-        const y = yScale(bins[i]);
+        const y = yScale(density[i]);
         if (i === firstNonZero) {
             pathD += `M ${x} ${y}`;
         } else {
@@ -758,22 +769,30 @@ function displayMIHistogram(result) {
     xTitle.textContent = 'MI (bits)';
     svg.appendChild(xTitle);
 
-    // Y-axis labels (counts on log scale)
+    // Y-axis labels (probability density on log scale)
     const yLabels = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     yLabels.setAttribute('fill', '#999');
     yLabels.setAttribute('font-size', '11');
     yLabels.setAttribute('text-anchor', 'end');
 
-    // Labels at powers of 10
-    for (let p = 0; p <= maxPower; p++) {
-        const count = Math.pow(10, p);
-        if (count > maxCount + 1) break;
-        const y = yScale(count);
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', margin.left - 8);
-        text.setAttribute('y', y + 4);
-        text.textContent = count.toLocaleString();
-        yLabels.appendChild(text);
+    // Labels at powers of 10 for probability density
+    for (let p = minPower; p <= maxPower; p++) {
+        const d = Math.pow(10, p);
+        const y = yScale(d);
+        if (y >= margin.top && y <= margin.top + plotHeight) {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', margin.left - 8);
+            text.setAttribute('y', y + 4);
+            // Format small numbers in scientific notation
+            if (d < 0.01) {
+                text.textContent = d.toExponential(0);
+            } else if (d < 1) {
+                text.textContent = d.toFixed(2);
+            } else {
+                text.textContent = d.toFixed(1);
+            }
+            yLabels.appendChild(text);
+        }
     }
     svg.appendChild(yLabels);
 
@@ -785,12 +804,12 @@ function displayMIHistogram(result) {
     yTitle.setAttribute('font-size', '12');
     yTitle.setAttribute('text-anchor', 'middle');
     yTitle.setAttribute('transform', `rotate(-90, 15, ${margin.top + plotHeight / 2})`);
-    yTitle.textContent = 'Count (log)';
+    yTitle.textContent = 'p(MI)';
     svg.appendChild(yTitle);
 
     barChart.appendChild(svg);
 
-    summaryText.textContent = `MI Distribution: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}] (semi-log scale)`;
+    summaryText.textContent = `MI Distribution: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}] (normalized, semi-log)`;
 
     chartContainer.classList.remove('hidden');
     summaryPanel.classList.remove('hidden');
