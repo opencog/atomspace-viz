@@ -118,3 +118,33 @@
 		(Name "compute-right-stats")))
 
 ; ---------------------------------------------------------------
+; Mutual Information computation.
+; MI(x,y) = log2(N(x,y) * N(*,*) / (N(x,*) * N(*,y)))
+
+; Define procedure to compute MI for a pair
+; Takes left and right, returns MI value
+(DefineLink
+	(DefinedProcedure "compute-mi-value")
+	(Lambda
+		(VariableList (Variable "$L") (Variable "$R"))
+		(Log2
+			(Divide
+				(Times
+					(FloatValueOf (List (Variable "$L") (Variable "$R")) (Any "count"))
+					(FloatValueOf total-atom (Any "count")))
+				(Times
+					(FloatValueOf (List (Variable "$L") (Any "right wildcard")) (Any "count"))
+					(FloatValueOf (List (Any "left wildcard") (Variable "$R")) (Any "count")))))))
+
+; Pipeline to compute MI for all pairs
+(PipeLink (Name "compute-mi")
+	(True
+		(Filter
+			(Rule (VariableList (Variable "left") (Variable "right"))
+				(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
+				(SetValue (List (Variable "left") (Variable "right")) (Any "mi")
+					(ExecutionOutput (DefinedProcedure "compute-mi-value")
+						(List (Variable "left") (Variable "right")))))
+			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
+
+; ---------------------------------------------------------------
