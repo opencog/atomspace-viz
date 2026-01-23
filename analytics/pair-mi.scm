@@ -24,24 +24,59 @@
 ;   (SetValue (Anchor "analytics") (Predicate "pair generator")
 ;       (DontExec (Meet ...)))
 ;
-; Stage 1: Count all pairs, return results in a LinkValue
+; Stage 1: Count all pairs and build marginal/pair counts
+; For each pair (left-val, right-val), we increment:
+;   1. Total count on the generator pattern
+;   2. Left marginal: Meet with left fixed, right variable
+;   3. Right marginal: Meet with right fixed, left variable
+;   4. Pair count: the specific edge with both fixed
+;
+; We use $L and $R as variable names for the marginal Meets to avoid
+; capture by the Rule's variable substitution.
 (PipeLink
 	(Name "pair-counter")
 	(PureExec
-		; First: count all pairs, suppress output with True
+		; Count all pairs and build counts
 		(True
 			(Filter
 				(Rule
 					(VariableList (Variable "left") (Variable "right"))
 					(LinkSignature (Type 'LinkValue) (Variable "left") (Variable "right"))
-					; Increment the count on the pattern
-					(IncrementValue
-						(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
-						(Predicate "total")
-						(Number 1)))
+					; All increments - return value ignored by True
+					(LinkValue
+						; 1. Total count on the generator
+						(IncrementValue
+							(LiteralValueOf (Anchor "analytics") (Predicate "pair generator"))
+							(Predicate "total")
+							(Number 1))
+						; 2. Left marginal - count for this left item across all right items
+						(IncrementValue
+							(Meet
+								(Variable "$R")
+								(Put
+									(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+									(List (Variable "left") (Variable "$R"))))
+							(Predicate "count")
+							(Number 1))
+						; 3. Right marginal - count for this right item across all left items
+						(IncrementValue
+							(Meet
+								(Variable "$L")
+								(Put
+									(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+									(List (Variable "$L") (Variable "right"))))
+							(Predicate "count")
+							(Number 1))
+						; 4. Pair count - count for this specific pair
+						(IncrementValue
+							(Put
+								(PremiseOf (ValueOf (Anchor "analytics") (Predicate "pair generator")))
+								(List (Variable "left") (Variable "right")))
+							(Predicate "count")
+							(Number 1))))
 				; Input: pairs from the Meet stored on the anchor
 				(ValueOf (Anchor "analytics") (Predicate "pair generator"))))
-		; Second: fetch and return the total count (still in scratch space)
+		; Fetch and return the total count
 		(ValueOf
 			(DontExec (LiteralValueOf (Anchor "analytics") (Predicate "pair generator")))
 			(Predicate "total"))))
