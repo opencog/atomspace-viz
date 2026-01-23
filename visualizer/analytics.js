@@ -294,15 +294,30 @@ function handleAnalyticsResponse(data) {
     const currentCommand = analyticsPendingCommand;
     analyticsPendingCommand = null;
 
+    // Check if this is an MI-related command
+    const isMICommand = currentCommand && currentCommand.startsWith('mi-');
+
     let response;
     try {
         response = JSON.parse(data);
     } catch (e) {
         console.log('Non-JSON analytics response:', data);
-        if (currentCommand === 'type-counts') {
+        // Non-JSON response could be an error message or unexpected output
+        if (isMICommand) {
+            console.error('MI command failed with non-JSON response:', data);
+            showError('MI computation error: ' + data);
+            showLoading(false);
+            document.getElementById('compute-mi-btn').disabled = false;
+        } else if (currentCommand === 'type-counts') {
             displayTypeCountsResult(data);
         }
         return;
+    }
+
+    // Check if response looks like an error (contains "error" or "exception" in text)
+    const responseStr = JSON.stringify(response).toLowerCase();
+    if (responseStr.includes('error') || responseStr.includes('exception')) {
+        console.error('Possible error in response:', response);
     }
 
     if (response.content && Array.isArray(response.content)) {
@@ -318,6 +333,19 @@ function handleAnalyticsResponse(data) {
 
         const contentText = response.content[0]?.text || '';
         console.log('Analytics content text:', contentText);
+
+        // Check if contentText looks like an error (for MI commands)
+        if (isMICommand && contentText) {
+            const lowerContent = contentText.toLowerCase();
+            if (lowerContent.includes('error') || lowerContent.includes('exception') ||
+                lowerContent.includes('throw') || lowerContent.includes('backtrace')) {
+                console.error('MI command returned error:', contentText);
+                showError('MI computation error: ' + contentText.substring(0, 200));
+                showLoading(false);
+                document.getElementById('compute-mi-btn').disabled = false;
+                return;
+            }
+        }
 
         if (currentCommand === 'mi-setup') {
             // Step 2: Trigger the pair-counter
@@ -356,21 +384,34 @@ function handleAnalyticsResponse(data) {
             document.getElementById('run-type-counts').disabled = false;
         }
     } else {
+        // Check if response looks like an error (for MI commands)
+        if (isMICommand) {
+            const responseStr = JSON.stringify(response).toLowerCase();
+            if (responseStr.includes('error') || responseStr.includes('exception') ||
+                responseStr.includes('throw') || responseStr.includes('backtrace')) {
+                console.error('MI command returned error (no content):', response);
+                showError('MI computation error: ' + JSON.stringify(response).substring(0, 200));
+                showLoading(false);
+                document.getElementById('compute-mi-btn').disabled = false;
+                return;
+            }
+        }
+
         if (currentCommand === 'mi-setup') {
             // Step 2: Trigger the pair-counter
-            console.log('MI setup complete (non-JSON), triggering pair-counter');
+            console.log('MI setup complete (alt format), triggering pair-counter');
             showLoading(true, 'Counting pairs...');
             analyticsPendingCommand = 'mi-counting';
             analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
         } else if (currentCommand === 'mi-counting') {
             // Step 3: Fetch the count
-            console.log('Pair counting complete (non-JSON), fetching count');
+            console.log('Pair counting complete (alt format), fetching count');
             showLoading(true, 'Fetching count...');
             analyticsPendingCommand = 'mi-fetch-count';
             analyticsWs.send(executeAtomese(GET_PAIR_COUNT));
         } else if (currentCommand === 'mi-fetch-count') {
             // Step 4: Display the result
-            console.log('Got pair count result (non-JSON):', response);
+            console.log('Got pair count result (alt format):', response);
             displayMIResult(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;
