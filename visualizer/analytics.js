@@ -54,8 +54,8 @@ function makeLoadAnalytics(port) {
 // Run the type-counts pipeline (sent to analytics server)
 const TYPE_COUNTS = '(Trigger (Name "type-counts"))';
 
-// Trigger the pair-counting pipeline and extract the total count
-const TRIGGER_PAIR_COUNTER = '(Trigger (Name "get total count"))';
+// Run full MI computation (pair-counter + compute-all-stats + compute-mi)
+const RUN_MI = '(Trigger (Name "run-mi"))';
 
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -345,18 +345,18 @@ function handleAnalyticsResponse(data) {
         }
 
         if (currentCommand === 'mi-setup') {
-            // Step 2: Trigger the pair-counter
-            console.log('MI setup complete, triggering pair-counter');
-            showLoading(true, 'Counting pairs...');
-            analyticsPendingCommand = 'mi-counting';
-            analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
+            // Step 2: Run full MI computation pipeline
+            console.log('MI setup complete, running MI computation');
+            showLoading(true, 'Computing MI (counting, stats, MI)...');
+            analyticsPendingCommand = 'mi-compute';
+            analyticsWs.send(executeAtomese(RUN_MI));
             return;
-        } else if (currentCommand === 'mi-counting') {
-            // Step 3: Display the result (count is returned directly from pair-counter)
-            console.log('Pair counting complete, result:', contentText);
+        } else if (currentCommand === 'mi-compute') {
+            // Step 3: Display the result
+            console.log('MI computation complete, result:', contentText);
             try {
-                const countResult = JSON.parse(contentText);
-                displayMIResult(countResult);
+                const miResult = JSON.parse(contentText);
+                displayMIResult(miResult);
             } catch (e) {
                 displayMIResult(contentText);
             }
@@ -388,14 +388,14 @@ function handleAnalyticsResponse(data) {
         }
 
         if (currentCommand === 'mi-setup') {
-            // Step 2: Trigger the pair-counter
-            console.log('MI setup complete (alt format), triggering pair-counter');
-            showLoading(true, 'Counting pairs...');
-            analyticsPendingCommand = 'mi-counting';
-            analyticsWs.send(executeAtomese(TRIGGER_PAIR_COUNTER));
-        } else if (currentCommand === 'mi-counting') {
-            // Step 3: Display the result (count is returned directly from pair-counter)
-            console.log('Pair counting complete (alt format), result:', response);
+            // Step 2: Run full MI computation pipeline
+            console.log('MI setup complete (alt format), running MI computation');
+            showLoading(true, 'Computing MI (counting, stats, MI)...');
+            analyticsPendingCommand = 'mi-compute';
+            analyticsWs.send(executeAtomese(RUN_MI));
+        } else if (currentCommand === 'mi-compute') {
+            // Step 3: Display the result
+            console.log('MI computation complete (alt format), result:', response);
             displayMIResult(response);
             showLoading(false);
             document.getElementById('compute-mi-btn').disabled = false;

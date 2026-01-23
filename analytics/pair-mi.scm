@@ -148,3 +148,12 @@
 			(ValueOf (Anchor "analytics") (Predicate "pair generator")))))
 
 ; ---------------------------------------------------------------
+; Master pipeline: run full MI computation
+; Runs pair-counter, compute-all-stats, then compute-mi in sequence
+(PipeLink (Name "run-mi")
+	(True
+		(Name "pair-counter")
+		(Name "compute-all-stats")
+		(Name "compute-mi")))
+
+; ---------------------------------------------------------------
