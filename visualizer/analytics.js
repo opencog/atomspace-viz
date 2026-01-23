@@ -630,44 +630,156 @@ function displayMIHistogram(result) {
         return;
     }
 
-    // Add some padding around the range
+    // Add padding around the range
     firstNonZero = Math.max(0, firstNonZero - 5);
     lastNonZero = Math.min(199, lastNonZero + 5);
 
-    const maxCount = Math.max(...bins);
+    const maxCount = Math.max(...bins.slice(firstNonZero, lastNonZero + 1));
+    const numBins = lastNonZero - firstNonZero + 1;
 
-    // Render histogram bars
+    // SVG dimensions
+    const width = 700;
+    const height = 300;
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+
+    // Create SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+    svg.style.display = 'block';
+    svg.style.margin = '0 auto';
+
+    // Scale functions
+    const xScale = (bin) => margin.left + ((bin - firstNonZero) / numBins) * plotWidth;
+    const yScale = (count) => margin.top + plotHeight - (count / maxCount) * plotHeight;
+
+    // Draw grid lines
+    const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    gridGroup.setAttribute('stroke', '#333');
+    gridGroup.setAttribute('stroke-width', '0.5');
+
+    for (let i = 0; i <= 5; i++) {
+        const y = margin.top + (i / 5) * plotHeight;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', margin.left);
+        line.setAttribute('y1', y);
+        line.setAttribute('x2', width - margin.right);
+        line.setAttribute('y2', y);
+        gridGroup.appendChild(line);
+    }
+    svg.appendChild(gridGroup);
+
+    // Build path for line graph
+    let pathD = '';
     for (let i = firstNonZero; i <= lastNonZero; i++) {
-        const miLow = (i - 100) / 10;
-        const count = bins[i];
-
-        const row = document.createElement('div');
-        row.className = 'bar-row';
-
-        const label = document.createElement('div');
-        label.className = 'bar-label';
-        label.textContent = miLow.toFixed(1);
-        label.title = `MI: [${miLow.toFixed(1)}, ${(miLow + 0.1).toFixed(1)})`;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'bar-wrapper';
-
-        const bar = document.createElement('div');
-        bar.className = 'bar';
-        bar.style.width = `${(count / maxCount) * 100}%`;
-
-        const value = document.createElement('div');
-        value.className = 'bar-value';
-        value.textContent = count > 0 ? count.toLocaleString() : '';
-
-        wrapper.appendChild(bar);
-        row.appendChild(label);
-        row.appendChild(wrapper);
-        row.appendChild(value);
-        barChart.appendChild(row);
+        const x = xScale(i);
+        const y = yScale(bins[i]);
+        if (i === firstNonZero) {
+            pathD += `M ${x} ${y}`;
+        } else {
+            pathD += ` L ${x} ${y}`;
+        }
     }
 
-    summaryText.textContent = `MI Histogram: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}]`;
+    // Draw filled area under the line
+    const areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const areaD = pathD + ` L ${xScale(lastNonZero)} ${yScale(0)} L ${xScale(firstNonZero)} ${yScale(0)} Z`;
+    areaPath.setAttribute('d', areaD);
+    areaPath.setAttribute('fill', 'rgba(59, 130, 246, 0.3)');
+    areaPath.setAttribute('stroke', 'none');
+    svg.appendChild(areaPath);
+
+    // Draw the line
+    const linePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    linePath.setAttribute('d', pathD);
+    linePath.setAttribute('fill', 'none');
+    linePath.setAttribute('stroke', '#3b82f6');
+    linePath.setAttribute('stroke-width', '2');
+    svg.appendChild(linePath);
+
+    // Draw axes
+    const axisGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    axisGroup.setAttribute('stroke', '#666');
+    axisGroup.setAttribute('stroke-width', '1');
+
+    // X-axis
+    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    xAxis.setAttribute('x1', margin.left);
+    xAxis.setAttribute('y1', margin.top + plotHeight);
+    xAxis.setAttribute('x2', width - margin.right);
+    xAxis.setAttribute('y2', margin.top + plotHeight);
+    axisGroup.appendChild(xAxis);
+
+    // Y-axis
+    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    yAxis.setAttribute('x1', margin.left);
+    yAxis.setAttribute('y1', margin.top);
+    yAxis.setAttribute('x2', margin.left);
+    yAxis.setAttribute('y2', margin.top + plotHeight);
+    axisGroup.appendChild(yAxis);
+    svg.appendChild(axisGroup);
+
+    // X-axis labels (MI values)
+    const xLabels = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    xLabels.setAttribute('fill', '#999');
+    xLabels.setAttribute('font-size', '11');
+    xLabels.setAttribute('text-anchor', 'middle');
+
+    const xTickCount = Math.min(10, numBins);
+    const xTickStep = Math.ceil(numBins / xTickCount);
+    for (let i = firstNonZero; i <= lastNonZero; i += xTickStep) {
+        const miVal = (i - 100) / 10;
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', xScale(i));
+        text.setAttribute('y', margin.top + plotHeight + 20);
+        text.textContent = miVal.toFixed(1);
+        xLabels.appendChild(text);
+    }
+    svg.appendChild(xLabels);
+
+    // X-axis title
+    const xTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    xTitle.setAttribute('x', margin.left + plotWidth / 2);
+    xTitle.setAttribute('y', height - 5);
+    xTitle.setAttribute('fill', '#999');
+    xTitle.setAttribute('font-size', '12');
+    xTitle.setAttribute('text-anchor', 'middle');
+    xTitle.textContent = 'MI (bits)';
+    svg.appendChild(xTitle);
+
+    // Y-axis labels (counts)
+    const yLabels = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    yLabels.setAttribute('fill', '#999');
+    yLabels.setAttribute('font-size', '11');
+    yLabels.setAttribute('text-anchor', 'end');
+
+    for (let i = 0; i <= 5; i++) {
+        const count = Math.round((maxCount * (5 - i)) / 5);
+        const y = margin.top + (i / 5) * plotHeight;
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', margin.left - 8);
+        text.setAttribute('y', y + 4);
+        text.textContent = count.toLocaleString();
+        yLabels.appendChild(text);
+    }
+    svg.appendChild(yLabels);
+
+    // Y-axis title
+    const yTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    yTitle.setAttribute('x', 15);
+    yTitle.setAttribute('y', margin.top + plotHeight / 2);
+    yTitle.setAttribute('fill', '#999');
+    yTitle.setAttribute('font-size', '12');
+    yTitle.setAttribute('text-anchor', 'middle');
+    yTitle.setAttribute('transform', `rotate(-90, 15, ${margin.top + plotHeight / 2})`);
+    yTitle.textContent = 'Count';
+    svg.appendChild(yTitle);
+
+    barChart.appendChild(svg);
+
+    summaryText.textContent = `MI Distribution: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}]`;
 
     chartContainer.classList.remove('hidden');
     summaryPanel.classList.remove('hidden');
