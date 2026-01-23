@@ -640,7 +640,7 @@ function displayMIHistogram(result) {
     // SVG dimensions
     const width = 700;
     const height = 300;
-    const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+    const margin = { top: 20, right: 30, bottom: 40, left: 60 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
 
@@ -651,17 +651,26 @@ function displayMIHistogram(result) {
     svg.style.display = 'block';
     svg.style.margin = '0 auto';
 
-    // Scale functions
+    // Semi-log scale: linear X, logarithmic Y
+    const logMax = Math.log10(maxCount + 1);
     const xScale = (bin) => margin.left + ((bin - firstNonZero) / numBins) * plotWidth;
-    const yScale = (count) => margin.top + plotHeight - (count / maxCount) * plotHeight;
+    const yScale = (count) => {
+        if (count <= 0) return margin.top + plotHeight;
+        const logVal = Math.log10(count + 1);
+        return margin.top + plotHeight - (logVal / logMax) * plotHeight;
+    };
 
-    // Draw grid lines
+    // Draw grid lines for log scale (at powers of 10)
     const gridGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     gridGroup.setAttribute('stroke', '#333');
     gridGroup.setAttribute('stroke-width', '0.5');
 
-    for (let i = 0; i <= 5; i++) {
-        const y = margin.top + (i / 5) * plotHeight;
+    // Draw grid lines at powers of 10
+    const maxPower = Math.ceil(Math.log10(maxCount + 1));
+    for (let p = 0; p <= maxPower; p++) {
+        const count = Math.pow(10, p);
+        if (count > maxCount + 1) break;
+        const y = yScale(count);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', margin.left);
         line.setAttribute('y1', y);
@@ -749,15 +758,17 @@ function displayMIHistogram(result) {
     xTitle.textContent = 'MI (bits)';
     svg.appendChild(xTitle);
 
-    // Y-axis labels (counts)
+    // Y-axis labels (counts on log scale)
     const yLabels = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     yLabels.setAttribute('fill', '#999');
     yLabels.setAttribute('font-size', '11');
     yLabels.setAttribute('text-anchor', 'end');
 
-    for (let i = 0; i <= 5; i++) {
-        const count = Math.round((maxCount * (5 - i)) / 5);
-        const y = margin.top + (i / 5) * plotHeight;
+    // Labels at powers of 10
+    for (let p = 0; p <= maxPower; p++) {
+        const count = Math.pow(10, p);
+        if (count > maxCount + 1) break;
+        const y = yScale(count);
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', margin.left - 8);
         text.setAttribute('y', y + 4);
@@ -774,12 +785,12 @@ function displayMIHistogram(result) {
     yTitle.setAttribute('font-size', '12');
     yTitle.setAttribute('text-anchor', 'middle');
     yTitle.setAttribute('transform', `rotate(-90, 15, ${margin.top + plotHeight / 2})`);
-    yTitle.textContent = 'Count';
+    yTitle.textContent = 'Count (log)';
     svg.appendChild(yTitle);
 
     barChart.appendChild(svg);
 
-    summaryText.textContent = `MI Distribution: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}]`;
+    summaryText.textContent = `MI Distribution: ${miValues.length.toLocaleString()} pairs, range [${minMI.toFixed(2)}, ${maxMI.toFixed(2)}] (semi-log scale)`;
 
     chartContainer.classList.remove('hidden');
     summaryPanel.classList.remove('hidden');
