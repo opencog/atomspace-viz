@@ -47,13 +47,15 @@
 			(Predicate "total"))))
 
 ; Stage 2: Extract the FloatValue count from the pair-counter result
+; The pair-counter returns (LinkValue (BoolValue 1) (FloatValue count))
+; Filter iterates over the LinkValue elements, matching only the FloatValue
 (PipeLink
 	(Name "get total count")
 	(Filter
 		(Rule
-			(TypedVariable (Variable "$count") (Type 'FloatValue))
-			(Variable "$count")
-			(Variable "$count"))
+			(Variable "$x")
+			(Signature (Type 'FloatValue))
+			(Variable "$x"))
 		(Name "pair-counter")))
 
 ; ---------------------------------------------------------------
