@@ -26,6 +26,42 @@
             width: 100%;
             max-height: 400px;
             position: relative;
+            display: flex;
+            gap: 15px;
+        }
+
+        .chart-area {
+            flex: 1;
+        }
+
+        .bin-slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 50px;
+            padding: 10px 0;
+        }
+
+        .bin-slider-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .bin-slider {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 20px;
+            height: 200px;
+            cursor: pointer;
+        }
+
+        .bin-slider-value {
+            font-size: 11px;
+            color: var(--text-primary);
+            margin-top: 5px;
+            text-align: center;
         }
 
         .bar-chart {
@@ -188,8 +224,16 @@
                 </div>
 
                 <div id="chart-container" class="chart-container hidden">
-                    <div id="bar-chart" class="bar-chart">
-                        <!-- Bars will be dynamically inserted here -->
+                    <div id="chart-area" class="chart-area">
+                        <div id="bar-chart" class="bar-chart">
+                            <!-- Chart will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    <div id="bin-slider-container" class="bin-slider-container hidden">
+                        <div class="bin-slider-label">Bin<br>Width</div>
+                        <input type="range" id="bin-slider" class="bin-slider"
+                               min="1" max="20" value="1" orient="vertical">
+                        <div id="bin-slider-value" class="bin-slider-value">0.05</div>
                     </div>
                 </div>
 
